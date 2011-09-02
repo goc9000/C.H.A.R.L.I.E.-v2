@@ -1,0 +1,56 @@
+BIN = ./bin
+SRC = ./src
+INCLUDES = -I./src
+
+MCU = atmega32
+CC = avr-gcc
+
+CFLAGS = -mmcu=$(MCU) -Wall -Wextra -Wuninitialized -std=c99 -DF_CPU=16000000UL -Os
+CFLAGS += -funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums
+CFLAGS += -ffunction-sections -fdata-sections
+CFLAGS += -mcall-prologues -mrelax 
+# CFLAGS += --combine -fwhole-program
+LDFLAGS = -Wl,-gc-sections -Wl,-Map=$(BIN)/charliev2.map
+
+HEX_FLASH_FLAGS = -R .eeprom -R .fuse -R .lock -R .signature
+
+APP_FILES = $(wildcard $(patsubst %,$(SRC)/%,*.* */*.* */*/*.* */*/*/*.* */*/*/*/*.*))
+APP_SOURCES = $(filter %.c,$(APP_FILES))
+
+MMC_DRIVE = /dev/sdb
+
+all: charliev2
+charliev2: $(BIN)/charliev2.elf $(BIN)/charliev2.hex checksize
+
+$(BIN)/charliev2.elf: $(APP_FILES)
+	@$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $(INCLUDES) $(APP_SOURCES)
+	
+%.hex: %.elf
+	@avr-objcopy -O ihex $(HEX_FLASH_FLAGS) $< $@
+
+checksize: $(BIN)/charliev2.elf
+	@avr-size -B $^ | tail -n+2 | (read text data bss etc; \
+	totFlash=$$((text+data)); totSram=$$((data+bss)); \
+	percFlash=$$((100*totFlash/32768)); \
+	percSram=$$((100*totSram/2048)); \
+	echo "Flash: $$totFlash bytes ($$percFlash%)"; \
+	echo "SRAM : $$totSram bytes ($$percSram%)"; \
+	)
+	
+program: $(BIN)/charliev2.hex
+	avrdude -c usbtiny -p m32 -B 1 -U flash:w:$^
+
+rootfs: $(BIN)/rootfs.bin
+
+$(BIN)/rootfs.bin:
+	../tools/mkrootfsimg.sh root_fs/contents > $@
+
+uploadfs: $(BIN)/rootfs.bin
+	sudo dd if=$^ of=$(MMC_DRIVE) bs=512 && \
+	sudo sync && \
+	sudo eject $(MMC_DRIVE)
+
+.PHONY: clean checksize program rootfs uploadfs
+
+clean:
+	rm -rf $(BIN)/*

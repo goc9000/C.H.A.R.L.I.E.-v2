@@ -1,0 +1,47 @@
+Port  Aka        Dir  Use                                           Movable?
+====  =========  ===  ============================================  ========
+PA0   ADC0       IN   Input from humidity sensor                       Y
+PA1   ADC1       IN   Input from insolation sensor                     Y
+PA2   ADC2        -   Unused                                           Y
+PA3   ADC3        -   Unused                                           Y
+PA4   ADC4        -   Unused                                           Y
+PA5   ADC5        -   Unused                                           Y
+PA6   ADC6        -   Unused                                           Y
+PA7   ADC7        -   Unused                                           Y
+
+PB0   T0/XCK      -   Unused                                           Y
+PB1   T1         OUT  Chip select for SD card                          Y
+PB2   AIN0/INT2  OUT  Unused (ENC28J60 interrupt input planned)        Y
+PB3   AIN1/OC0   OUT  Reset for ENC28J60                               Y
+PB4   SS         OUT  Chip select for ENC28J60                         Y
+PB5   MOSI       OUT  SPI bus (MOSI)                                   N
+PB6   MISO       IN   SPI bus (MISO)                                   N
+PB7   SCK        OUT  SPI bus (SCK)                                    N
+
+PC0   SCL        OUT  TWI/I2C interface with RTC                       N
+PC1   SDA        I/O  TWI/I2C interface with RTC                       N
+PC2   TCK        OUT  Sensor multiplexer (/EN)                         Y
+PC3   TMS        OUT  Sensor multiplexer (ADR0)                        Y
+PC4   TDO        OUT  Sensor multiplexer (ADR1)                        Y
+PC5   TDI        OUT  Pump decoder (/EN)                               Y
+PC6   TOSC1      OUT  Pump decoder (ADR0)                              Y
+PC7   TOSC2      OUT  Pump decoder (ADR1)                              Y
+
+PC0   SCL        OUT  Sensor multiplexer (/EN)                         Y
+PC1   SDA        OUT  Sensor multiplexer (ADR0)                        Y
+PC2   TCK        OUT  Sensor multiplexer (ADR1)                        Y
+PC3   TMS        OUT  Pump decoder (/EN)                               Y
+PC4   TDO        OUT  Pump decoder (ADR0)                              Y
+PC5   TDI        OUT  Pump decoder (ADR1)                              Y
+PC6   TOSC1       -   Unused                                           Y
+PC7   TOSC2       -   Unused                                           Y
+
+PD0   RXD        IN   RS232 interface                                  N
+PD1   TXD        OUT  RS232 interface                                  N
+PD2   INT0       IN   USB interface (D+)                               N
+PD3   INT1       IN   USB interface (D-)                               N
+PD4   OC1B        -   Unused                                           Y
+PD5   OC1A        -   Unused                                           Y
+PD6   ICP        IN   Debug key                                        Y
+PD7   OC2        OUT  Debug LED                                        Y
+

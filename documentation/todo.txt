@@ -1,0 +1,36 @@
+TODO's for version 2.8
+======================
+
+- reformat and upload all documentation, schematics, etc. from the
+  previous version
+- battery support so as to achieve full portability. This requires:
+    - hardware modifications: battery socket + a circuit for measuring
+      the voltage level so as to get an idea as to whether the battery
+      is running out. Idea: could run a line to the ADC and use the
+      internal 2.56V reference (hopefully, it is not significantly
+      affected by VCC variations). Might have to use a voltage divider,
+      which should be isolated with a normally-closed FET.
+    - powersaving: the main problem is the networking stuff. Keeping an
+      Ethernet connection active prevents much ATMEGA idling and the
+      ENC28J60 also draws a lot of power. Could implement some sort of
+      "RJ45 plugged in" detection so that all networking components are
+      shut down when there's nothing connected (the user would only
+      visit the device with a laptop rather rarely anyway). With the
+      networking components shut down, the ATMEGA would have very
+      little work to do periodically and could be idle pretty much 99%
+      of the time
+- field test the device for days on end; check for timekeeping glitches
+  (the RTC support is suspect) and consider sensor recalibration.
+- stress-test the web interface
+- test the web pages under Firefox and IE9 (they were mostly tested
+  under Chrome so far)
+- drop the time server options in the interface and replace them with
+  a button to get the time from the user's workstation (HTTP header or
+  sent via JavaScript?)
+- microcode-based web content generation. Had been experimented with
+  before, but much more feasible now when all the tokens are
+  enumerated and the large constant text sections have all been moved
+  off into the XSLT. Getting rid of all the if-switch overhead may well
+  end up saving up to 50% in Flash program memory.
+- perhaps bring back the FAT32 support, or at least Minix v1 format so
+  that the card can be read again without much hassle
