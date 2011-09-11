@@ -3,6 +3,8 @@ TODO's for version 2.8
 
 - reformat and upload all documentation, schematics, etc. from the
   previous version
+- more detailed readme (.rst?)
+    - add requirements (e.g. imagemagick, apache)
 - battery support so as to achieve full portability. This requires:
     - hardware modifications: battery socket + a circuit for measuring
       the voltage level so as to get an idea as to whether the battery

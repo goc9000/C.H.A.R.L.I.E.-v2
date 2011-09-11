@@ -17,9 +17,8 @@ HEX_FLASH_FLAGS = -R .eeprom -R .fuse -R .lock -R .signature
 APP_FILES = $(wildcard $(patsubst %,$(SRC)/%,*.* */*.* */*/*.* */*/*/*.* */*/*/*/*.*))
 APP_SOURCES = $(filter %.c,$(APP_FILES))
 
-MMC_DRIVE = /dev/sdb
-
 all: charliev2
+
 charliev2: $(BIN)/charliev2.elf $(BIN)/charliev2.hex checksize
 
 $(BIN)/charliev2.elf: $(APP_FILES)
@@ -40,17 +39,7 @@ checksize: $(BIN)/charliev2.elf
 program: $(BIN)/charliev2.hex
 	avrdude -c usbtiny -p m32 -B 1 -U flash:w:$^
 
-rootfs: $(BIN)/rootfs.bin
-
-$(BIN)/rootfs.bin:
-	../tools/mkrootfsimg.sh root_fs/contents > $@
-
-uploadfs: $(BIN)/rootfs.bin
-	sudo dd if=$^ of=$(MMC_DRIVE) bs=512 && \
-	sudo sync && \
-	sudo eject $(MMC_DRIVE)
-
-.PHONY: clean checksize program rootfs uploadfs
+.PHONY: clean checksize program
 
 clean:
 	rm -rf $(BIN)/*
