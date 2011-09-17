@@ -22,8 +22,8 @@ all: charliev2
 charliev2: $(BIN)/charliev2.elf $(BIN)/charliev2.hex checksize
 
 $(BIN)/charliev2.elf: $(APP_FILES)
-	@$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $(INCLUDES) $(APP_SOURCES)
-	
+	@mkdir -p $(BIN) && $(CC) -o $@ $(CFLAGS) $(LDFLAGS) $(INCLUDES) $(APP_SOURCES)
+
 %.hex: %.elf
 	@avr-objcopy -O ihex $(HEX_FLASH_FLAGS) $< $@
 
@@ -35,7 +35,7 @@ checksize: $(BIN)/charliev2.elf
 	echo "Flash: $$totFlash bytes ($$percFlash%)"; \
 	echo "SRAM : $$totSram bytes ($$percSram%)"; \
 	)
-	
+
 program: $(BIN)/charliev2.hex
 	avrdude -c usbtiny -p m32 -B 1 -U flash:w:$^
 
