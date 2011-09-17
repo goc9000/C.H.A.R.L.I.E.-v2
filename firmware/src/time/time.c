@@ -193,6 +193,40 @@ int8_t time_compare_monotonic(uint32_t time_a, uint32_t time_b)
     return ((time_b - time_a) >> 31) ? 1 : -1;
 }
 
+static void _itoa2(char *buf, uint8_t number)
+{
+    buf[0] = number / 10;
+    buf[1] = number % 10;
+}
+
+/**
+ * time_format_rfc3339 - Renders a timestamp in RFC3339 format.
+ * @buffer: A buffer to store the representation. Must be at least 20
+ *          characters wide.
+ * @datetime: The time to format
+ */
+void time_format_rfc3339(char *buffer, time_t datetime)
+{
+    tm time;
+    
+    strcpy_P(buffer, PSTR("0000-00-00T00:00:00"));
+    
+    if (!datetime) {
+        buffer[10] = 0;
+        return;
+    }
+    
+    time_convert_from_raw(&time, datetime);
+    
+    _itoa2(buffer+ 0, 19 + (time.tm_year / 100));
+    _itoa2(buffer+ 2, time.tm_year % 100);
+    _itoa2(buffer+ 5, time.tm_mon + 1);
+    _itoa2(buffer+ 8, time.tm_mday);
+    _itoa2(buffer+11, time.tm_hour);
+    _itoa2(buffer+14, time.tm_min);
+    _itoa2(buffer+17, time.tm_sec);
+}
+
 /**
  * time_init - Initializes timekeeping
  * 

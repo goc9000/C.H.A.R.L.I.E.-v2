@@ -43,5 +43,6 @@ void time_convert_from_raw(tm *time, time_t timestamp);
 time_t time_convert_to_raw(const tm *time);
 bool time_same_date(time_t time_a, time_t time_b);
 int8_t time_compare_monotonic(uint32_t time_a, uint32_t time_b);
+void time_format_rfc3339(char *buffer, time_t datetime);
 
 #endif

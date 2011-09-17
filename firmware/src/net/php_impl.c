@@ -173,44 +173,6 @@ static inline int32_t _limit(int32_t value, int32_t min_val, int32_t max_val) {
         : ((value > max_val) ? max_val : value);
 }
 
-static void _php_format_date_xml(time_t datetime, char *buffer)
-{
-    tm time;
-    uint8_t i;
-    uint16_t year;
-    
-    if (!datetime) {
-        strcpy_P(buffer, PSTR("0000-00-00"));
-        return;
-    }
-    
-    time_convert_from_raw(&time, datetime);
-    year = 1900 + time.tm_year;
- 
-    i = 4;
-    do {
-        buffer[--i] = '0' + (year % 10);
-        year /= 10;
-    } while (i>0);
-
-    buffer[4] = '-';
-    buffer[5] = '0' + ((time.tm_mon+1) / 10);
-    buffer[6] = '0' + ((time.tm_mon+1) % 10);
-    buffer[7] = '-';
-    buffer[8] = '0' + (time.tm_mday / 10);
-    buffer[9] = '0' + (time.tm_mday % 10);
-    buffer[10] = 'T';
-    buffer[11] = '0' + (time.tm_hour / 10);
-    buffer[12] = '0' + (time.tm_hour % 10);
-    buffer[13] = ':';
-    buffer[14] = '0' + (time.tm_min / 10);
-    buffer[15] = '0' + (time.tm_min % 10);
-    buffer[16] = ':';
-    buffer[17] = '0' + (time.tm_sec / 10);
-    buffer[18] = '0' + (time.tm_sec % 10);
-    buffer[19] = 0;
-}
-
 static void _php_get_xml_node_val(char *buf)
 {
     buf[0] = 0;
@@ -219,7 +181,6 @@ static void _php_get_xml_node_val(char *buf)
 static void _php_get_xml_attr_val(char *buf)
 {
     time_t time;
-    ip_addr_t* ip;
     uint8_t node = php.xml_level
         ? php.xml_stack[php.xml_level-1] : NAME_NONE;
     uint8_t attr = php.xml_stack[php.xml_level];
@@ -265,7 +226,7 @@ static void _php_get_xml_attr_val(char *buf)
                     time = php.entry.event.time;
                     break;
             }
-            _php_format_date_xml(time, buf);
+            time_format_rfc3339(buf, time);
             break;
         case NAME_CODE:
             ltoa(php.entry.event.code, buf, 10);
@@ -304,15 +265,14 @@ static void _php_get_xml_attr_val(char *buf)
             ltoa(cfg.recording_interval, buf, 10);
             break;
         case NAME_FROM:
-            _php_format_date_xml(php.params.from_date, buf);
+            time_format_rfc3339(buf, php.params.from_date);
             break;
         case NAME_TO:
-            _php_format_date_xml(php.params.to_date, buf);
+            time_format_rfc3339(buf, php.params.to_date);
             break;
         case NAME_IP:
-            ip = (node == NAME_ALERTS)
-                ? (&cfg.alerts_server_ip) : (&cfg.time_server_ip);
-            ip_format(buf, ip);
+            ip_format(buf, (node == NAME_ALERTS)
+                ? (&cfg.alerts_server_ip) : (&cfg.time_server_ip));
             break;
         case NAME_MAC:
             eth_format_mac(buf, &cfg.mac_addr);
@@ -665,7 +625,7 @@ static inline uint8_t _php_csv_col_count(void)
 
 static void _php_format_date_csv(time_t datetime, char *buffer)
 {
-    _php_format_date_xml(datetime, buffer);
+    time_format_rfc3339(buffer, datetime);
     buffer[10] = ' ';
 }
 
