@@ -38,6 +38,8 @@
 #define CARD_R1_FLAG_TIMEOUT     0x80
 
 // Low-level functions
+#define card_chip_select()   CFG_CARD_CS_PORT &= ~(_BV(CFG_CARD_CS_BIT))
+#define card_chip_deselect() CFG_CARD_CS_PORT |= _BV(CFG_CARD_CS_BIT)
 uint8_t card_exec(uint8_t command, uint32_t argument);
 uint8_t card_response_size(uint8_t command);
 

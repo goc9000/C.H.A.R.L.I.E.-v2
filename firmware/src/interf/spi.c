@@ -59,7 +59,7 @@ void spi_restore(void)
  */
 void spi_init_master(void)
 {
-    CFG_SPI_DDR |= _BV(CFG_SPI_MOSI_BIT) | _BV(CFG_SPI_SS_BIT) | _BV(CFG_SPI_SCK_BIT);
+    CFG_SPI_DDR |= _BV(CFG_SPI_MOSI_BIT) | _BV(CFG_SPI_SCK_BIT);
     CFG_SPI_DDR &= ~(_BV(CFG_SPI_MISO_BIT));
     SPCR = _BV(SPE) | _BV(MSTR) | SPI_SPR_VALUE;
     SPSR = SPI_SPI2X_VALUE;

@@ -14,9 +14,6 @@
 #include "util/bool.h"
 #include "sd_card.h"
 
-#define card_chip_select()   CFG_CARD_CS_PORT &= ~(_BV(CFG_CARD_CS_BIT))
-#define card_chip_deselect() CFG_CARD_CS_PORT |= _BV(CFG_CARD_CS_BIT)
-
 static uint16_t card_blk_size;
 
 /**
@@ -25,6 +22,8 @@ static uint16_t card_blk_size;
  * @argument: The command argument
  * 
  * Returns the card's answer. 0xFF means timeout.
+ * 
+ * Note: This does NOT automatically select/deselect the card!
  */
 uint8_t card_exec(uint8_t command, uint32_t argument)
 {
@@ -35,8 +34,6 @@ uint8_t card_exec(uint8_t command, uint32_t argument)
     if (command & 0x80) {
         card_exec(CARD_CMD_APP_CMD, 0);
     }
-
-    card_chip_select();
 
     // Send command and argument
     spi_write(((command & 0x7F) | 0x40));
@@ -54,8 +51,6 @@ uint8_t card_exec(uint8_t command, uint32_t argument)
         }
     }
 
-    card_chip_deselect();
-
     return data;
 }
 
@@ -68,9 +63,15 @@ uint8_t card_exec(uint8_t command, uint32_t argument)
  */
 uint8_t card_set_block_size(uint16_t blk_size)
 {
+    uint8_t stat;
+    
     card_blk_size = blk_size;
     
-    return card_exec(CARD_CMD_SET_BLOCKLEN, blk_size);
+    card_chip_select();
+    stat = card_exec(CARD_CMD_SET_BLOCKLEN, blk_size);
+    card_chip_deselect();
+    
+    return stat;
 }
 
 /**
@@ -83,6 +84,7 @@ uint8_t card_read_block(void *buffer, uint32_t address)
     uint8_t stat;
     uint16_t tries, i;
 
+    card_chip_select();
     while (TRUE) {
         stat = card_exec(CARD_CMD_READ_SINGLE_BLOCK, address);
         if (stat) {
@@ -90,7 +92,6 @@ uint8_t card_read_block(void *buffer, uint32_t address)
         }
 
         // Wait for block to be selected
-        card_chip_select();
         for (tries = 50000; tries > 0; tries--) {
             spi_read(stat);
             if (stat != CARD_STAT_IDLE) {
@@ -130,13 +131,14 @@ uint8_t card_write_block(const void *buffer, uint32_t address)
     uint16_t tries;
     uint8_t stat, dummy;
     
-    stat = card_exec(CARD_CMD_WRITE_BLOCK, address);
-    if (stat) {
-        return stat;
-    }
-
     card_chip_select();
+    
     while (TRUE) {
+        stat = card_exec(CARD_CMD_WRITE_BLOCK, address);
+        if (stat) {
+            break;
+        }
+
         // Write block start
         spi_write(CARD_STAT_BLOCK_START);
         
@@ -192,28 +194,34 @@ uint8_t card_init(void)
 
     // Transmit reset command.
     spi_slow();
-    for (i = 0; i < 100; i++) {
-        spi_write(0xFF);
-    }
+    card_chip_select();
     for (tries = 10; tries > 0; tries--) {
         data = card_exec(CARD_CMD_GO_IDLE_STATE, 0);
-        if (data == 0x01) {
+        if (data == 0x00) {
             break;
         }
+        for (i = 0; i < 100; i++) {
+            spi_write(0xFF);
+        }
     }
+    card_chip_deselect();
     spi_restore();
     if (!tries) {
         return data;
     }
 
     // Transmit initialization command
-    for (tries = 20000; tries > 0; tries--)
-    {
+    card_chip_select();
+    for (tries = 20; tries > 0; tries--) {
         data = card_exec(CARD_ACMD_SD_SEND_OP_COND, 0);
         if (data == 0) {
             break;
         }
+        for (i = 0; i < 100; i++) {
+            spi_write(0xFF);
+        }
     }
+    card_chip_deselect();
     if (!tries) {
         return data;
     }
