@@ -9,7 +9,12 @@ $(FIRMWARE):
 $(FSIMAGE):
 	make -C ./filesys
 
-.PHONY: clean
+simulate: $(FIRMWARE) $(FSIMAGE)
+	@cp -u $(FSIMAGE) ./simulation/fsimage.bin && \
+	cd ./simulation && \
+	megas2 charliev2.msd
+
+.PHONY: clean simulate
 
 clean:
 	make -C ./firmware clean
