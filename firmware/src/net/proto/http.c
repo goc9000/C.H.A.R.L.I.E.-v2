@@ -17,11 +17,11 @@
 #define HTTP_CODES_COUNT          5
 #define HTTP_CONTENT_TYPES_COUNT  8
 
-static char HTTP_COMMAND_NAMES[] PROGMEM =
+static const char HTTP_COMMAND_NAMES[] PROGMEM =
     "GET\0"
     "POST";
 
-static uint16_t HTTP_CODES[HTTP_CODES_COUNT] PROGMEM = {
+static const uint16_t HTTP_CODES[HTTP_CODES_COUNT] PROGMEM = {
     HTTP_CODE_OK,
     HTTP_CODE_REDIRECT,
     HTTP_CODE_NOT_FOUND,
@@ -29,7 +29,7 @@ static uint16_t HTTP_CODES[HTTP_CODES_COUNT] PROGMEM = {
     HTTP_CODE_NOT_IMPLEMENTED
 };
 
-static char HTTP_CODE_NAMES[] PROGMEM =
+static const char HTTP_CODE_NAMES[] PROGMEM =
     "OK\0"
     "Found\0"
     "Not Found\0"
@@ -37,7 +37,7 @@ static char HTTP_CODE_NAMES[] PROGMEM =
     "Not Implemented\0"
     "Error";
 
-static char CONTENT_TYPE_NAMES[] PROGMEM =
+static const char CONTENT_TYPE_NAMES[] PROGMEM =
     "text/plain\0"
     "text/html\0"
     "text/xml\0"
@@ -50,7 +50,7 @@ static char CONTENT_TYPE_NAMES[] PROGMEM =
 
 #define EXTENSIONS_COUNT 7
 
-static uint8_t CONTENT_TYPES_FOR_EXT[EXTENSIONS_COUNT + 1] PROGMEM = {
+static const uint8_t CONTENT_TYPES_FOR_EXT[EXTENSIONS_COUNT + 1] PROGMEM = {
     HTTP_CONTENT_TYPE_TEXT_HTML,
     HTTP_CONTENT_TYPE_TEXT_CSS,
     HTTP_CONTENT_TYPE_TEXT_PLAIN,
@@ -61,7 +61,7 @@ static uint8_t CONTENT_TYPES_FOR_EXT[EXTENSIONS_COUNT + 1] PROGMEM = {
     HTTP_CONTENT_TYPE_NONE
 };
 
-static char EXTENSIONS[] PROGMEM =
+static const char EXTENSIONS[] PROGMEM =
     "htm\0"
     "css\0"
     "txt\0"

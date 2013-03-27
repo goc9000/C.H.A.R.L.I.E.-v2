@@ -72,7 +72,7 @@
 #define NAME_TAB                239
 #define NAME_EXECUTED           243
 
-static char PHP_TOKENS[] PROGMEM =
+static const char PHP_TOKENS[] PROGMEM =
     "\0page\0id\0datetime\0current\0log\0records\0plant\0humid\0ilum\0"
     "row\0event\0code\0data\0version\0encoding\0type\0href\0from\0to\0"
     "pages\0perPage\0reverse\0config\0plants\0recording\0net\0alerts\0"
@@ -90,14 +90,14 @@ static char PHP_TOKENS[] PROGMEM =
 #define PHP_PAGE_CONFIG           4
 #define PHP_PAGE_NONE             5
 
-static char PHP_PAGES[] PROGMEM =
+static const char PHP_PAGES[] PROGMEM =
     "/header.php\0"
     "/home.php\0"
     "/records.php\0"
     "/log.php\0"
     "/config.php";
 
-static char PHP_PAGE_IDS[] PROGMEM =
+static const char PHP_PAGE_IDS[] PROGMEM =
     "headerPage\0"
     "homePage\0"
     "recordsPage\0"
@@ -180,7 +180,7 @@ static void _php_get_xml_node_val(char *buf)
 
 static void _php_get_xml_attr_val(char *buf)
 {
-    time_t time;
+    time_t time = 0;
     uint8_t node = php.xml_level
         ? php.xml_stack[php.xml_level-1] : NAME_NONE;
     uint8_t attr = php.xml_stack[php.xml_level];

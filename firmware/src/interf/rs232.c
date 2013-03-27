@@ -87,7 +87,7 @@ void rs232_puts(const char *str)
  */
 void rs232_puts_P(PGM_P str)
 {
-    prog_char c;
+    char c;
 
     while ((c = pgm_read_byte(str))) {
         rs232_putc(c);
