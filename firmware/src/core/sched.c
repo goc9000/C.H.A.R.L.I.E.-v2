@@ -13,7 +13,7 @@
 
 struct {
     Task queue[CFG_SCHED_SLOTS];
-    int n_tasks;
+    uint8_t n_tasks;
 } sched;
 
 static void _sched_unschedule(callback_t callback, uint32_t param,
