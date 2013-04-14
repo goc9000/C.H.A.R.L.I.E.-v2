@@ -86,6 +86,8 @@ static uint8_t initialize(void)
     time_init();
     time_set_raw(rtc_read());
     
+    sched_init();
+    
     if (card_init()) {
         return CHARLIE_STAT_CARD_ERROR;
     }
@@ -104,8 +106,6 @@ static uint8_t initialize(void)
     adc_init();
     sensors_init();
     pump_init();
-    
-    sched_init();
     plants_init();
     
     sei();
