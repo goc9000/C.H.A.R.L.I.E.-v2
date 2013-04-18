@@ -66,7 +66,7 @@ uint32_t dhcp_make_discover_packet(PacketBuf *packet,
     const mac_addr_t *my_mac);
 void dhcp_make_accept_packet(PacketBuf *packet,
     const dhcp_Header *offer_header, const ip_addr_t *server_id);
-void dhcp_make_renew_packet(PacketBuf *packet, uint32_t tran_id,
+uint32_t dhcp_make_renew_packet(PacketBuf *packet,
     const mac_addr_t *my_mac, const ip_addr_t *my_ip);
 void dhcp_add_option(PacketBuf *packet, uint8_t option, uint8_t length,
     const void *data);

@@ -111,7 +111,7 @@ void dhcp_renew_address(uint32_t tries)
     
     net_get_config(&my_mac, &my_ip, NULL, NULL);
     
-    dhcp_make_renew_packet(&packet, dhcp.transaction_id, &my_mac, &my_ip);
+    dhcp.transaction_id = dhcp_make_renew_packet(&packet, &my_mac, &my_ip);
     dhcp_send(&packet, &dhcp.issuing_server);
     dhcp.status = STATUS_WAIT_ACK;
     

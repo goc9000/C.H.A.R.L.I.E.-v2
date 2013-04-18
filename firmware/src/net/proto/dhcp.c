@@ -98,23 +98,27 @@ void dhcp_make_accept_packet(PacketBuf *packet, const dhcp_Header *offer_header,
 /**
  * dhcp_make_renew_packet - Creates a DHCP renewal packet
  * @packet: A structure to hold the created packet
- * @tran_id: The previous transaction ID
  * @my_mac: The client's MAC address
  * @my_ip: The client's IP address
+ * 
+ * Returns the transaction ID.
  */
-void dhcp_make_renew_packet(PacketBuf *packet, uint32_t tran_id,
+uint32_t dhcp_make_renew_packet(PacketBuf *packet,
     const mac_addr_t *my_mac, const ip_addr_t *my_ip)
 {
+    uint32_t xid = rand();
     dhcp_Header header;
     memset(&header, 0, sizeof(dhcp_Header));
     header.opcode = DHCP_OP_REQUEST;
     header.hardw_type = DHCP_HW_TYPE_ETHERNET;
     header.hardw_addr_len = 6;
-    header.transaction_id = tran_id;
+    header.transaction_id = xid;
     header.client_hw_addr = *my_mac;
     header.client_ip = *my_ip;
     
     dhcp_make_packet(packet, &header, DHCP_PKT_REQUEST);
+
+    return xid;
 }
 
 /**
