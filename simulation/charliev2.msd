@@ -29,6 +29,12 @@
             }
         },
         {
+            "id": "virtual_net",
+            "type": "VirtualNetwork",
+            "ipv4_address": "192.168.222.1",
+            "devices": ["enc28j60"]
+        },
+        {
             "id": "mock_plant_hum_sensor",
             "type": "VoltageSource",
             "value": 0.0,

@@ -12,7 +12,7 @@ $(FSIMAGE):
 simulate: $(FIRMWARE) $(FSIMAGE)
 	@cp -u $(FSIMAGE) ./simulation/fsimage.bin && \
 	cd ./simulation && \
-	megas2 charliev2.msd
+	sudo megas2 charliev2.msd
 
 .PHONY: clean simulate
 
