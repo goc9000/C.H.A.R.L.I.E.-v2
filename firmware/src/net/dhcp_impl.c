@@ -41,7 +41,7 @@ void dhcp_receive(PacketBuf *packet, ip_Header *ip_hdr)
     ip_addr_t server_id = IP_ADDR_NULL;
     ip_addr_t gateway = IP_ADDR_NULL;
     ip_addr_t net_mask = IP_ADDR_NULL;
-    uint32_t renew_time = 0;
+    uint32_t renew_time = RENEW_TIME_INF;
     
     pktbuf_get_header(packet, &header, sizeof(dhcp_Header), EC_SIG_DHCP);
     // ignore padding, sname, file, DHCP sig
@@ -103,7 +103,7 @@ void dhcp_renew_address(uint32_t tries)
     PacketBuf packet;
     mac_addr_t my_mac;
     ip_addr_t my_ip;
-    
+
     if (!tries) {
         dhcp_start_client(0);
         return;

@@ -153,6 +153,9 @@ void dhcp_parse_options(PacketBuf *packet, uint8_t *pkt_type,
     uint32_t *renew_time)
 {
     uint8_t opt, len;
+    uint8_t found_renew = FALSE;
+    uint32_t temp;
+    
     while (!pktbuf_empty(packet)) {
         pktbuf_get_header(packet, &opt, 1, 0);
         
@@ -175,8 +178,16 @@ void dhcp_parse_options(PacketBuf *packet, uint8_t *pkt_type,
             case DHCP_OPTION_NETMASK:
                 pktbuf_get_header(packet, net_mask, 4, 0);
                 break;
+            case DHCP_OPTION_LEASE_TIME:
+                if (!found_renew) {
+                    pktbuf_get_header(packet, &temp, 4, 0);
+                    *renew_time = ntohl(temp) >> 1;
+                }
+                break;
             case DHCP_OPTION_RENEW_TIME:
-                pktbuf_get_header(packet, renew_time, 4, 0);
+                pktbuf_get_header(packet, &temp, 4, 0);
+                *renew_time = ntohl(temp);
+                found_renew = TRUE;
                 break;
             case DHCP_OPTION_PKT_TYPE:
                 pktbuf_get_header(packet, pkt_type, 1, 0);
