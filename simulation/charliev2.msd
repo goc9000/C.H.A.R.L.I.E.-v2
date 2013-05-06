@@ -56,7 +56,7 @@
             "x": 16,
             "y": 16,
             "size": 16,
-            "color": {"r":255, "g":0, "b":0},
+            "color": "#ff0000",
             "caption": "Debug LED",
             "connect": {
                 "IN": { "device": "mcu", "pin": "D7" }
@@ -70,7 +70,6 @@
             "x": 16,
             "y": 40,
             "size": 16,
-            "color": {"r":0, "g":0, "b":0},
             "caption": "Debug button",
             "connect": {
                 "OUT": { "device": "mcu", "pin": "D6" }
@@ -85,12 +84,22 @@
             "mcu": "mcu"
         },
         {
+            "id": "console",
+            "type": "RS232Console",
+            "x": 16,
+            "y": 64,
+            "columns": 80,
+            "rows": 25,
+            "font_size": 10,
+            "rs232_peer": "mcu"
+        },
+        {
             "id": "dashboard",
             "type": "Dashboard",
             "background": "charlie_dashboard_bkgd.png",
             "font": "/usr/share/fonts/truetype/freefont/FreeSans.ttf",
             "monoFont": "/usr/share/fonts/truetype/freefont/FreeMono.ttf",
-            "widgets": ["debug_led", "debug_btn", "pc_indicator"]
+            "widgets": ["debug_led", "debug_btn", "pc_indicator", "console"]
         }
     ]
 }
