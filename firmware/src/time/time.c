@@ -195,8 +195,8 @@ int8_t time_compare_monotonic(uint32_t time_a, uint32_t time_b)
 
 static void _itoa2(char *buf, uint8_t number)
 {
-    buf[0] = number / 10;
-    buf[1] = number % 10;
+    buf[0] = '0' + (number / 10);
+    buf[1] = '0' + (number % 10);
 }
 
 /**
