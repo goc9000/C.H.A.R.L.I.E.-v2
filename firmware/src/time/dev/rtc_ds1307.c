@@ -9,6 +9,7 @@
 #include <avr/io.h>
 #include <string.h>
 
+#include "debug/debug.h"
 #include "interf/i2c.h"
 #include "dot_config.h"
 #include "rtc_ds1307.h"
@@ -93,8 +94,6 @@ time_t rtc_read(void)
     time.tm_sec = _bcd2dec(regs[DS1307_REG_SECONDS]);
     time.tm_min = _bcd2dec(regs[DS1307_REG_MINUTES]);
     if (regs[DS1307_REG_HOURS] & _BV(DS1307_12HR_BIT)) {
-        time.tm_hour = _bcd2dec(regs[DS1307_REG_HOURS] & 0x3F);
-    } else {
         hour = _bcd2dec(regs[DS1307_REG_HOURS] & 0x1F);
         if (hour == 12) {
             hour = 0;
@@ -103,6 +102,8 @@ time_t rtc_read(void)
             hour += 12;
         }
         time.tm_hour = hour;
+    } else {
+        time.tm_hour = _bcd2dec(regs[DS1307_REG_HOURS] & 0x3F);
     }
     time.tm_mday = _bcd2dec(regs[DS1307_REG_DATE]);
     time.tm_mon = _bcd2dec(regs[DS1307_REG_MONTH])-1;
