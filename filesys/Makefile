@@ -27,7 +27,9 @@ wwwtest: ./out/contents
 	@cp ./src/def_config.bin $@/sys/config.bin
 	@touch $@/sys/wrtest.bin
 	@mkdir -p $@/wwwroot/img
-	@cp ./src/graphics/out/* $@/wwwroot/img
+	@cp ./src/graphics/out/sprites.png $@/wwwroot/img/sprites.png
+	@cp ./src/graphics/out/favicon.ico $@/wwwroot/favicon.ico
+	@cp ./src/graphics/out/favicon.png $@/wwwroot/favicon.png
 	@cp ./src/www/* $@/wwwroot
 
 clean:

@@ -1,7 +1,7 @@
 LEVELS:=0 25 50 75 100
 READINGS:=$(patsubst %,src/readings/humid%.png,$(LEVELS)) $(patsubst %,src/readings/ilum%.png,$(LEVELS))
 
-all: out/sprites.png out/favicon.ico
+all: out/sprites.png out/favicon.ico out/favicon.png
 
 obj/16x16/%: %
 	@mkdir -p $(dir $@) && convert $^ -resize 16x16 $@
@@ -30,6 +30,9 @@ out/sprites.png: obj/big_icons.png obj/small_icons.png
 	@mkdir -p $(dir $@) && convert $^ -background Transparent -append $@
 
 out/favicon.ico: src/logo_alternate.png
+	@mkdir -p $(dir $@) && convert $^ -resize 32x32 $@
+
+out/favicon.png: src/logo_alternate.png
 	@mkdir -p $(dir $@) && convert $^ -resize 32x32 $@
 
 clean:
