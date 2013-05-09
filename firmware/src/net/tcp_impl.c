@@ -297,6 +297,7 @@ static void _tcp_receive_for_pending(tcp_Header* tcp_header, const tcp_Peer *pee
 
     tcp_make_reply_header(&reply_header, tcp_header, 2,
         tcp_header->seq_no, TCP_FLAG_ACK);
+    reply_header.window_size = 0;
     
     pktbuf_create(&packet, STD_HEADROOM);
     tcp_send(&packet, &reply_header, &(peer->ip));
