@@ -1,7 +1,7 @@
 all: ./out/fsimage.bin
 
 ./out/fsimage.bin: ./out/contents
-	@../tools/mkrawfsimg.sh $^ > $@
+	@../tools/mkrawfsimg.py $^ $@
 
 uploadfs: ./out/fsimage.bin
 	@echo -n 'Enter the SD card device (e.g. /dev/sdb) to burn the file system to. ' && \
