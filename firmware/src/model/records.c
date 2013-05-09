@@ -29,7 +29,7 @@ void rec_get_query(Query *query)
 void rec_save_record(const Record *record)
 {
     file_t file;
-    file_open(&file, PSTR(CFG_RECORDS_FILE));
+    file_open_P(&file, PSTR(CFG_RECORDS_FILE));
     file_append(&file);
     file_write(&file, (void *)record, sizeof(Record));
     file_flush(&file);
