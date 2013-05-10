@@ -7,6 +7,7 @@
  */
 
 #include <stdlib.h>
+#include <string.h>
 
 #include "debug/debug.h"
 #include "core/sched.h"
@@ -52,6 +53,7 @@ static struct {
 } tcp;
 
 void _tcp_timeout(uint32_t dummy __attribute__((unused)));
+static void _tcp_activate_next_connection(void);
 
 void _tcp_activity_lapse(uint32_t dummy __attribute__((unused)))
 {
@@ -163,8 +165,6 @@ static void _tcp_reply_on_connection(void)
 
 static void _tcp_end_connection(void)
 {
-    uint8_t i;
-    
     if (!(tcp.current.flags & SF_EXISTS)) {
         return;
     }
@@ -173,20 +173,7 @@ static void _tcp_end_connection(void)
 
     tcp.current.flags &= ~SF_EXISTS;
     
-    if (tcp.num_pending) {
-        tcp.current.flags = SF_EXISTS;
-        tcp.current.my_seq = 2;
-        tcp.current.peer = tcp.pending[0].peer;
-        tcp.current.failures = 0;
-        _tcp_reset_xmit_buffer();
-
-        for (i = 0; i < tcp.num_pending-1; i++) {
-            tcp.pending[i] = tcp.pending[i+1];
-        }
-        tcp.num_pending--;
-
-        _tcp_reply_on_connection();
-    }
+    _tcp_activate_next_connection();
 }
 
 static void _tcp_abort_connection(void)
@@ -199,6 +186,23 @@ static void _tcp_abort_connection(void)
     _tcp_reset_xmit_buffer();
     _tcp_reply_on_connection();
     _tcp_end_connection();
+}
+
+static void _tcp_activate_next_connection(void)
+{
+    if (tcp.num_pending) {
+        tcp.current.flags = SF_EXISTS;
+        tcp.current.my_seq = 2;
+        tcp.current.peer = tcp.pending[0].peer;
+        tcp.current.failures = 0;
+        _tcp_reset_xmit_buffer();
+
+        memmove(tcp.pending, tcp.pending + 1,
+            sizeof(tcp_PendingConn) * (tcp.num_pending - 1));
+        tcp.num_pending--;
+
+        _tcp_reply_on_connection();
+    }
 }
 
 void _tcp_timeout(uint32_t dummy __attribute__((unused)))
