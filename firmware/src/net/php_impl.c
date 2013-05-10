@@ -631,8 +631,8 @@ static void _php_get_csv_header_chunk(char *buf)
             aspect = (php.csv.col - 1) % 3;
 
             strcpy_P(buf, strset_get(
-                PSTR("Humid 0 [%]\0Ilum # [%]\0Info"), aspect));
-            *strchr(buf, '0') = '1' + (php.csv.col - 1) / 3;
+                PSTR("Humid # [%]\0Ilum # [%]\0Info #"), aspect));
+            *strchr(buf, '#') = '1' + (php.csv.col - 1) / 3;
         } else {
             strcpy_P(buf, PSTR("Date"));
         }
