@@ -121,16 +121,16 @@ static const char PHP_PAGE_IDS[] PROGMEM =
 
 #define PHP_STAT_OPEN_NODE        0
 #define PHP_STAT_READ_ATTR        1
-#define PHP_STAT_OPEN_ATTR        2
-#define PHP_STAT_READ_ATTR_VAL    3
-#define PHP_STAT_END_ATTR         4
-#define PHP_STAT_READ_CHILDREN    5
-#define PHP_STAT_READ_TEXT        6
-#define PHP_STAT_CLOSE_NODE       7
-#define PHP_STAT_DONE             8
+#define PHP_STAT_END_ATTR         2
+#define PHP_STAT_READ_CHILDREN    3
+#define PHP_STAT_READ_TEXT        4
+#define PHP_STAT_CLOSE_NODE       5
+#define PHP_STAT_DONE             6
+
+#define PHP_MAX_CHUNK_SIZE       64
 
 struct {
-    uint8_t dribble;
+    uint8_t dribble; // how much of the current chunk has been read
 
     uint8_t state;
     uint8_t xml_stack[12];
@@ -281,7 +281,7 @@ static void _php_get_xml_attr_val(char *buf)
     }
 }
 
-static void _php_get_xml_token(char *buf)
+static void _php_get_xml_chunk(char *buf)
 {
     uint8_t pre_top = php.xml_level
         ? php.xml_stack[php.xml_level - 1] : NAME_NONE;
@@ -293,13 +293,11 @@ static void _php_get_xml_token(char *buf)
             buf[0] = '<';
             strcpy_P(buf + 1, TOK(pre_top));
             break;
-        case PHP_STAT_OPEN_ATTR:
+        case PHP_STAT_READ_ATTR:
             buf[0] = ' ';
             strcpy_P(buf + 1, TOK(top));
             strcat_P(buf, PSTR("=\""));
-            break;
-        case PHP_STAT_READ_ATTR_VAL:
-            _php_get_xml_attr_val(buf);
+            _php_get_xml_attr_val(buf + strlen(buf));
             strcat_P(buf, PSTR("\""));
             break;
         case PHP_STAT_END_ATTR:
@@ -582,7 +580,7 @@ static bool _php_next_xml_attr(void)
     return TRUE;
 }
 
-static void _php_next_xml_token(void)
+static void _php_next_xml_chunk(void)
 {
     switch (php.state) {
         case PHP_STAT_READ_TEXT:
@@ -593,10 +591,9 @@ static void _php_next_xml_token(void)
                 ? PHP_STAT_OPEN_NODE : PHP_STAT_CLOSE_NODE;
             break;
         case PHP_STAT_OPEN_NODE:
-            php.state = PHP_STAT_READ_ATTR;
-            break;
-        case PHP_STAT_OPEN_ATTR:
-            php.state = PHP_STAT_READ_ATTR_VAL;
+        case PHP_STAT_READ_ATTR:
+            php.state = _php_next_xml_attr()
+                ? PHP_STAT_READ_ATTR : PHP_STAT_END_ATTR;
             break;
         case PHP_STAT_CLOSE_NODE:
             if (!php.xml_level) {
@@ -606,15 +603,8 @@ static void _php_next_xml_token(void)
             php.xml_level--;
             php.state = PHP_STAT_READ_TEXT;
             break;
-        case PHP_STAT_READ_ATTR:
-            php.state = _php_next_xml_attr()
-                ? PHP_STAT_OPEN_ATTR : PHP_STAT_END_ATTR;
-            break;
         case PHP_STAT_END_ATTR:
             php.state = PHP_STAT_READ_TEXT;
-            break;
-        case PHP_STAT_READ_ATTR_VAL:
-            php.state = PHP_STAT_READ_ATTR;
             break;
     }
 }
@@ -630,7 +620,7 @@ static void _php_format_date_csv(time_t datetime, char *buffer)
     buffer[10] = ' ';
 }
 
-static void _php_get_csv_header_token(char *buf)
+static void _php_get_csv_header_chunk(char *buf)
 {
     uint8_t aspect;
     
@@ -652,7 +642,7 @@ static void _php_get_csv_header_token(char *buf)
     }
 }
 
-static void _php_get_csv_body_token(char *buf)
+static void _php_get_csv_body_chunk(char *buf)
 {
     uint8_t aspect;
     PlantStatus *plant;
@@ -688,14 +678,14 @@ static void _php_get_csv_body_token(char *buf)
     }
 }
 
-static void _php_get_csv_token(char *buf)
+static void _php_get_csv_chunk(char *buf)
 {
     uint8_t tok_len;
 
     if (php.csv.first) {
-        _php_get_csv_header_token(buf);
+        _php_get_csv_header_chunk(buf);
     } else {
-        _php_get_csv_body_token(buf);
+        _php_get_csv_body_chunk(buf);
     }
 
     tok_len = strlen(buf);
@@ -708,7 +698,7 @@ static void _php_get_csv_token(char *buf)
     buf[tok_len] = 0;
 }
 
-static void _php_next_csv_token(void)
+static void _php_next_csv_chunk(void)
 {
     void *target;
     
@@ -723,6 +713,24 @@ static void _php_next_csv_token(void)
         
         php.csv.first = FALSE;
         php.csv.col = 0;
+    }
+}
+
+static void _php_get_chunk(char *buf)
+{
+    if (php.csv.export) {
+        _php_get_csv_chunk(buf);
+    } else {
+        _php_get_xml_chunk(buf);
+    }
+}
+
+static void _php_next_chunk(void)
+{
+    if (php.csv.export) {
+        _php_next_csv_chunk();
+    } else {
+        _php_next_xml_chunk();
     }
 }
 
@@ -995,7 +1003,7 @@ bool php_start(const char *url_path, PacketBuf *params)
  */
 uint16_t php_read(void *buffer, uint16_t length)
 {
-    char buf[48];
+    char buf[PHP_MAX_CHUNK_SIZE];
     uint8_t tok_len;
     uint16_t count, tot_count = 0;
 
@@ -1004,11 +1012,7 @@ uint16_t php_read(void *buffer, uint16_t length)
     }
 
     while (length) {
-        if (php.csv.export) {
-            _php_get_csv_token(buf);
-        } else {
-            _php_get_xml_token(buf);
-        }
+        _php_get_chunk(buf);
         tok_len = strlen(buf);
 
         count = length;
@@ -1023,12 +1027,7 @@ uint16_t php_read(void *buffer, uint16_t length)
         length -= count;
 
         if (!count || (php.dribble == tok_len)) {
-            if (php.csv.export) {
-                _php_next_csv_token();
-            } else {
-                _php_next_xml_token();
-            }
-            
+            _php_next_chunk();
             php.dribble = 0;
             if (php.state == PHP_STAT_DONE) {
                 break;
