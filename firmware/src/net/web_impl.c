@@ -14,6 +14,7 @@
 #include "php_impl.h"
 #include "web_impl.h"
 #include "dot_config.h"
+#include "util/misc.h"
 
 #define BODY_HTTP_ERROR 1
 #define BODY_FILE       2
@@ -43,7 +44,7 @@ void _web_write_response_headers(PacketBuf *buffer)
         switch(i) {
             case 0:
                 strcpy_P(buf, PSTR("HTTP/1.1 "));
-                itoa(web.response.http_code, buf+9, 10);
+                itoa10(web.response.http_code, buf+9);
                 strcat_P(buf, PSTR(" "));
                 strcat_P(buf, http_get_http_code_text(web.response.http_code));
                 break;
@@ -52,7 +53,7 @@ void _web_write_response_headers(PacketBuf *buffer)
                     continue;
                 }
                 strcpy_P(buf, PSTR("Cache-Control: public, max-age="));
-                ltoa(web.response.cache, buf+31, 10);
+                ltoa10(web.response.cache, buf+31);
                 break;
             case 2:
                 strcpy_P(buf, PSTR("Connection: close"));

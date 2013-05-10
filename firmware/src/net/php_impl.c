@@ -14,6 +14,7 @@
 
 #include "debug/debug.h"
 #include "util/stringset.h"
+#include "util/misc.h"
 #include "proto/ip.h"
 #include "proto/eth.h"
 #include "proto/http.h"
@@ -191,28 +192,28 @@ static void _php_get_xml_attr_val(char *buf)
             strcpy_P(buf, strset_get(PHP_PAGE_IDS, php.page));
             break;
         case NAME_HUMID:
-            itoa(php.entry.record.plants[php.plant_idx].humidity / 2, buf, 10);
+            itoa10(php.entry.record.plants[php.plant_idx].humidity / 2, buf);
             break;
         case NAME_ILUM:
-            itoa(php.entry.record.plants[php.plant_idx].ilumination / 2, buf, 10);
+            itoa10(php.entry.record.plants[php.plant_idx].ilumination / 2, buf);
             break;
         case NAME_MIN:
-            itoa(cfg.plants[php.plant_idx].watering_start_threshold / 2, buf, 10);
+            itoa10(cfg.plants[php.plant_idx].watering_start_threshold / 2, buf);
             break;
         case NAME_MAX:
-            itoa(cfg.plants[php.plant_idx].watering_stop_threshold / 2, buf, 10);
+            itoa10(cfg.plants[php.plant_idx].watering_stop_threshold / 2, buf);
             break;
         case NAME_FLAGS:
-            itoa(cfg.plants[php.plant_idx].flags, buf, 10);
+            itoa10(cfg.plants[php.plant_idx].flags, buf);
             break;
         case NAME_TZDELTA:
-            itoa(cfg.timezone_delta, buf, 10);
+            itoa10(cfg.timezone_delta, buf);
             break;
         case NAME_EXECUTED:
-            itoa(php.params.command, buf, 10);
+            itoa10(php.params.command, buf);
             break;
         case NAME_PORT:
-            ltoa(cfg.alerts_port, buf, 10);
+            ltoa10(cfg.alerts_port, buf);
             break;
         case NAME_DATETIME:
             switch (node) {
@@ -229,10 +230,10 @@ static void _php_get_xml_attr_val(char *buf)
             time_format_rfc3339(buf, time);
             break;
         case NAME_CODE:
-            ltoa(php.entry.event.code, buf, 10);
+            ltoa10(php.entry.event.code, buf);
             break;
         case NAME_DATA:
-            ltoa(php.entry.event.data, buf, 10);
+            ltoa10(php.entry.event.data, buf);
             break;
         case NAME_VERSION:
             strcpy_P(buf, PSTR("1.0"));
@@ -247,22 +248,22 @@ static void _php_get_xml_attr_val(char *buf)
             strcpy_P(buf, PSTR("main.xsl"));
             break;
         case NAME_PAGE:
-            itoa(php.params.page, buf, 10);
+            itoa10(php.params.page, buf);
             break;
         case NAME_PAGES:
-            itoa(php.vars.pages, buf, 10);
+            itoa10(php.vars.pages, buf);
             break;
         case NAME_PERPAGE:
-            itoa(php.params.per_page, buf, 10);
+            itoa10(php.params.per_page, buf);
             break;
         case NAME_REVERSE:
-            itoa(php.params.reverse, buf, 10);
+            itoa10(php.params.reverse, buf);
             break;
         case NAME_TAB:
-            itoa(php.params.tab, buf, 10);
+            itoa10(php.params.tab, buf);
             break;
         case NAME_INTERVAL:
-            ltoa(cfg.recording_interval, buf, 10);
+            ltoa10(cfg.recording_interval, buf);
             break;
         case NAME_FROM:
             time_format_rfc3339(buf, php.params.from_date);
@@ -665,7 +666,7 @@ static void _php_get_csv_body_token(char *buf)
             
             if (aspect < 2) {
                 if (!(plant->flags & PLANT_FLAGS_NOT_INSTALLED))
-                    itoa((aspect ? plant->ilumination : plant->humidity)/2, buf, 10);
+                    itoa10((aspect ? plant->ilumination : plant->humidity)/2, buf);
             }
         } else {
             _php_format_date_csv(php.entry.record.time, buf);

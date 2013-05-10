@@ -15,6 +15,7 @@
 #include "net/proto/eth.h"
 #include "effectors/pump.h"
 #include "util/hex.h"
+#include "util/misc.h"
 #include "debug.h"
 
 #if CFG_DEBUG_ENABLED==1
@@ -35,10 +36,10 @@ void _debug_printf(PGM_P format, ...)
             c = pgm_read_byte(format);
             switch (c) {
                 case 'd':
-                    rs232_puts(itoa(va_arg(args, int), buf, 10));
+                    rs232_puts(itoa10(va_arg(args, int), buf));
                     continue;
                 case 'l':
-                    rs232_puts(ltoa(va_arg(args, long), buf, 10));
+                    rs232_puts(ltoa10(va_arg(args, long), buf));
                     continue;
                 case 's':
                     rs232_puts(va_arg(args, const char*));

@@ -12,6 +12,7 @@
 
 #include "dot_config.h"
 #include "storage/filesys.h"
+#include "util/misc.h"
 #include "log.h"
 
 /**
@@ -91,7 +92,7 @@ void log_format_message(char *buf, const LogEntry *entry)
     switch (entry->code) {
         case LOG_EVENT_WATERING_PLANT:
         case LOG_EVENT_DONE_WATERING:
-            ltoa(entry->data+1, buf+strlen(buf), 10);
+            ltoa10(entry->data+1, buf+strlen(buf));
             break;
     }
 }

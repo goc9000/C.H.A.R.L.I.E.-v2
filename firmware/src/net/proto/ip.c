@@ -11,6 +11,7 @@
 #include <stdlib.h>
 
 #include "ip.h"
+#include "util/misc.h"
 
 ip_addr_t IP_ADDR_NULL  = {0x00,0x00,0x00,0x00};
 ip_addr_t IP_ADDR_BCAST = {0xFF,0xFF,0xFF,0xFF};
@@ -161,7 +162,7 @@ void ip_format(char* buf, const ip_addr_t *addr)
     
     for (i = 0; i < 4; i++)
     {
-        itoa(bytes[i], buf, 10);
+        itoa10(bytes[i], buf);
         buf += strlen(buf);
         if (i < 3) {
             *buf = '.';
