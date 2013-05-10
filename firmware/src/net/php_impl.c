@@ -154,12 +154,14 @@ struct {
         uint8_t col;
     } csv;
     
-    uint8_t plant_idx;
+    time_t render_date;
+    
     Query query;
     union {
         Record record;
         LogEntry event;
     } entry;
+    uint8_t plant_idx;
 
     struct {
         uint16_t pages;
@@ -218,7 +220,7 @@ static void _php_get_xml_attr_val(char *buf)
         case NAME_DATETIME:
             switch (node) {
                 case NAME_PAGE:
-                    time = time_get_raw();
+                    time = php.render_date;
                     break;
                 case NAME_ROW:
                     time = php.entry.record.time;
@@ -983,6 +985,7 @@ bool php_start(const char *url_path, PacketBuf *params)
     }
     
     php.page = page;
+    php.render_date = time_get_raw();
     php.csv.export = FALSE;
     php.dribble = 0;
     php.state = PHP_STAT_READ_TEXT;
