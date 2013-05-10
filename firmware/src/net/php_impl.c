@@ -192,16 +192,16 @@ static void _php_get_xml_attr_val(char *buf)
             strcpy_P(buf, strset_get(PHP_PAGE_IDS, php.page));
             break;
         case NAME_HUMID:
-            itoa10(php.entry.record.plants[php.plant_idx].humidity / 2, buf);
+            itoa10(php.entry.record.plants[php.plant_idx].humidity, buf);
             break;
         case NAME_ILUM:
-            itoa10(php.entry.record.plants[php.plant_idx].ilumination / 2, buf);
+            itoa10(php.entry.record.plants[php.plant_idx].ilumination, buf);
             break;
         case NAME_MIN:
-            itoa10(cfg.plants[php.plant_idx].watering_start_threshold / 2, buf);
+            itoa10(cfg.plants[php.plant_idx].watering_start_threshold, buf);
             break;
         case NAME_MAX:
-            itoa10(cfg.plants[php.plant_idx].watering_stop_threshold / 2, buf);
+            itoa10(cfg.plants[php.plant_idx].watering_stop_threshold, buf);
             break;
         case NAME_FLAGS:
             itoa10(cfg.plants[php.plant_idx].flags, buf);
@@ -666,7 +666,7 @@ static void _php_get_csv_body_token(char *buf)
             
             if (aspect < 2) {
                 if (!(plant->flags & PLANT_FLAGS_NOT_INSTALLED))
-                    itoa10((aspect ? plant->ilumination : plant->humidity)/2, buf);
+                    itoa10(aspect ? plant->ilumination : plant->humidity, buf);
             }
         } else {
             _php_format_date_csv(php.entry.record.time, buf);
@@ -914,10 +914,10 @@ static void _php_read_params_phase2(PacketBuf *params)
                     as_int = _limit(as_int, 0, 100);
                     
                     if (c3 == 'l') {
-                        cfg.plants[plant_idx].watering_start_threshold = as_int << 1;
+                        cfg.plants[plant_idx].watering_start_threshold = as_int;
                     }
                     if (c3 == 'u') {
-                        cfg.plants[plant_idx].watering_stop_threshold = as_int << 1;
+                        cfg.plants[plant_idx].watering_stop_threshold = as_int;
                     }
                     break;
                 case 'r':

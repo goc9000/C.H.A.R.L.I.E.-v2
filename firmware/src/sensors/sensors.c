@@ -88,10 +88,10 @@ uint16_t sensors_get(void)
         raw_val = calib_max;
     }
     
-    raw_val = (uint32_t)(raw_val - calib_min) * 200 / (calib_max - calib_min);
+    raw_val = (uint32_t)(raw_val - calib_min) * 100 / (calib_max - calib_min);
     
     if (reverse) {
-        raw_val = 200 - raw_val;
+        raw_val = 100 - raw_val;
     }
     
     return raw_val;

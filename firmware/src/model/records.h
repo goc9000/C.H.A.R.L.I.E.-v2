@@ -18,8 +18,8 @@
 #define PLANT_FLAGS_NOT_INSTALLED 1
 
 typedef struct {
-    uint8_t ilumination; // 0-200 for 0-100%
-    uint8_t humidity; // 0-200 for 0-100%
+    uint8_t ilumination; // 0-100 for 0-100%
+    uint8_t humidity; // 0-100 for 0-100%
     uint8_t flags;
 } PlantStatus;
 

@@ -18,8 +18,8 @@
 #define PLANT_CFG_FLAG_NOT_INSTALLED 1
 
 typedef struct {
-    uint8_t watering_start_threshold; // 0-200 for 0-100%
-    uint8_t watering_stop_threshold; // 0-200 for 0-100%
+    uint8_t watering_start_threshold; // 0-100 for 0-100%
+    uint8_t watering_stop_threshold; // 0-100 for 0-100%
     uint8_t flags;
 } PlantConfig;
 
