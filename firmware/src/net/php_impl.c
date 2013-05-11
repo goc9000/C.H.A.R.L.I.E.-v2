@@ -168,14 +168,6 @@ struct {
     } vars;
 } php;
 
-#define MAX_INT32 0x7FFFFFFF
-
-static inline int32_t _limit(int32_t value, int32_t min_val, int32_t max_val) {
-    return (value < min_val)
-        ? min_val
-        : ((value > max_val) ? max_val : value);
-}
-
 static void _php_get_xml_node_val(char *buf)
 {
     buf[0] = 0;
@@ -843,15 +835,15 @@ static void _php_read_params_phase1(PacketBuf *params)
 
         if (php.page == PHP_PAGE_CONFIG) {
             if ((c == 't') && (!para_name[1])) {
-                php.params.tab = _limit(as_int, 1, 5);
+                php.params.tab = clamp(as_int, 1, 5);
             }
         } else {
             switch (c) {
                 case 'n':
-                    php.params.per_page = _limit(as_int, 5, MAX_INT32);
+                    php.params.per_page = max(as_int, 5);
                     break;
                 case 'p':
-                    php.params.page = _limit(as_int, 1, MAX_INT32);
+                    php.params.page = max(as_int, 1);
                     break;
                 case 'r':
                     php.params.reverse = !as_int;
@@ -921,7 +913,7 @@ static void _php_read_params_phase2(PacketBuf *params)
                         php.params.checkboxes |= _BV(plant_idx);
                     }
                     
-                    as_int = _limit(as_int, 0, 100);
+                    as_int = clamp(as_int, 0, 100);
                     
                     if (c3 == 'l') {
                         cfg.plants[plant_idx].watering_start_threshold = as_int;
@@ -932,7 +924,7 @@ static void _php_read_params_phase2(PacketBuf *params)
                     break;
                 case 'r':
                     if (c2 == 'i') {
-                        cfg.recording_interval = _limit(as_int, 1, MAX_INT32);
+                        cfg.recording_interval = max(as_int, 1);
                     }
                     break;
                 case 'n':
