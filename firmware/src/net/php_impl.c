@@ -142,15 +142,15 @@ struct {
         uint16_t per_page;
         time_t from_date;
         time_t to_date;
-        bool reverse:1;
+        bool reverse;
         uint8_t tab;
         uint8_t command;
         uint8_t checkboxes;
     } params;
 
     struct {
-        bool export:1;
-        bool first:1;
+        bool export;
+        bool first;
         uint8_t col;
     } csv;
     
@@ -173,9 +173,39 @@ static void _php_get_xml_node_val(char *buf)
     buf[0] = 0;
 }
 
+void _php_format_uint8(char *buf, uint8_t *value_ptr)
+{
+    itoa10(*value_ptr, buf);
+}
+
+void _php_format_uint16(char *buf, uint16_t *value_ptr)
+{
+    ltoa10(*value_ptr, buf);
+}
+
+void _php_format_int16(char *buf, int16_t *value_ptr)
+{
+    ltoa10(*value_ptr, buf);
+}
+
+void _php_format_uint32(char *buf, uint32_t *value_ptr)
+{
+    ltoa10(*value_ptr, buf);
+}
+
+void _php_format_datetime(char *buf, time_t *value_ptr)
+{
+    time_format_rfc3339(buf, *value_ptr);
+}
+
+#define _php_format_ip           ip_format
+#define _php_format_mac          eth_format_mac
+#define _php_format_fixedstr     strcpy_P
+
 static void _php_get_xml_attr_val(char *buf)
 {
     time_t time = 0;
+    PGM_P page_id = NULL;
     uint8_t node = php.xml_level
         ? php.xml_stack[php.xml_level-1] : NAME_NONE;
     uint8_t attr = php.xml_stack[php.xml_level];
@@ -183,31 +213,32 @@ static void _php_get_xml_attr_val(char *buf)
     buf[0] = 0;
     switch (attr) {
         case NAME_ID:
-            strcpy_P(buf, strset_get(PHP_PAGE_IDS, php.page));
+            page_id = strset_get(PHP_PAGE_IDS, php.page);
+            _php_format_fixedstr(buf, page_id);
             break;
         case NAME_HUMID:
-            itoa10(php.entry.record.plants[php.plant_idx].humidity, buf);
+            _php_format_uint8(buf, &php.entry.record.plants[php.plant_idx].humidity);
             break;
         case NAME_ILUM:
-            itoa10(php.entry.record.plants[php.plant_idx].ilumination, buf);
+            _php_format_uint8(buf, &php.entry.record.plants[php.plant_idx].ilumination);
             break;
         case NAME_MIN:
-            itoa10(cfg.plants[php.plant_idx].watering_start_threshold, buf);
+            _php_format_uint8(buf, &cfg.plants[php.plant_idx].watering_start_threshold);
             break;
         case NAME_MAX:
-            itoa10(cfg.plants[php.plant_idx].watering_stop_threshold, buf);
+            _php_format_uint8(buf, &cfg.plants[php.plant_idx].watering_stop_threshold);
             break;
         case NAME_FLAGS:
-            itoa10(cfg.plants[php.plant_idx].flags, buf);
+            _php_format_uint8(buf, &cfg.plants[php.plant_idx].flags);
             break;
         case NAME_TZDELTA:
-            itoa10(cfg.timezone_delta, buf);
+            _php_format_int16(buf, &cfg.timezone_delta);
             break;
         case NAME_EXECUTED:
-            itoa10(php.params.command, buf);
+            _php_format_uint8(buf, &php.params.command);
             break;
         case NAME_PORT:
-            ltoa10(cfg.alerts_port, buf);
+            _php_format_uint16(buf, &cfg.alerts_port);
             break;
         case NAME_DATETIME:
             switch (node) {
@@ -221,56 +252,56 @@ static void _php_get_xml_attr_val(char *buf)
                     time = php.entry.event.time;
                     break;
             }
-            time_format_rfc3339(buf, time);
+            _php_format_datetime(buf, &time);
             break;
         case NAME_CODE:
-            ltoa10(php.entry.event.code, buf);
+            _php_format_uint8(buf, &php.entry.event.code);
             break;
         case NAME_DATA:
-            ltoa10(php.entry.event.data, buf);
+            _php_format_uint32(buf, &php.entry.event.data);
             break;
         case NAME_VERSION:
-            strcpy_P(buf, PSTR("1.0"));
+            _php_format_fixedstr(buf, PSTR("1.0"));
             break;
         case NAME_ENCODING:
-            strcpy_P(buf, PSTR("UTF-8"));
+            _php_format_fixedstr(buf, PSTR("UTF-8"));
             break;
         case NAME_TYPE:
-            strcpy_P(buf, PSTR("text/xsl"));
+            _php_format_fixedstr(buf, PSTR("text/xsl"));
             break;
         case NAME_HREF:
-            strcpy_P(buf, PSTR("main.xsl"));
+            _php_format_fixedstr(buf, PSTR("main.xsl"));
             break;
         case NAME_PAGE:
-            itoa10(php.params.page, buf);
+            _php_format_uint16(buf, &php.params.page);
             break;
         case NAME_PAGES:
-            itoa10(php.vars.pages, buf);
+            _php_format_uint16(buf, &php.vars.pages);
             break;
         case NAME_PERPAGE:
-            itoa10(php.params.per_page, buf);
+            _php_format_uint16(buf, &php.params.per_page);
             break;
         case NAME_REVERSE:
-            itoa10(php.params.reverse, buf);
+            _php_format_uint8(buf, &php.params.reverse);
             break;
         case NAME_TAB:
-            itoa10(php.params.tab, buf);
+            _php_format_uint8(buf, &php.params.tab);
             break;
         case NAME_INTERVAL:
-            ltoa10(cfg.recording_interval, buf);
+            _php_format_uint16(buf, &cfg.recording_interval);
             break;
         case NAME_FROM:
-            time_format_rfc3339(buf, php.params.from_date);
+            _php_format_datetime(buf, &php.params.from_date);
             break;
         case NAME_TO:
-            time_format_rfc3339(buf, php.params.to_date);
+            _php_format_datetime(buf, &php.params.to_date);
             break;
         case NAME_IP:
-            ip_format(buf, (node == NAME_ALERTS)
+            _php_format_ip(buf, (node == NAME_ALERTS)
                 ? (&cfg.alerts_server_ip) : (&cfg.time_server_ip));
             break;
         case NAME_MAC:
-            eth_format_mac(buf, &cfg.mac_addr);
+            _php_format_mac(buf, &cfg.mac_addr);
             break;
     }
 }
