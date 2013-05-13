@@ -30,7 +30,7 @@ wwwtest: ./out/contents
 	@cp ./src/graphics/out/sprites.png $@/wwwroot/img/sprites.png
 	@cp ./src/graphics/out/favicon.ico $@/wwwroot/favicon.ico
 	@cp ./src/graphics/out/favicon.png $@/wwwroot/favicon.png
-	@cp ./src/www/* $@/wwwroot
+	@cp `find . -wholename './src/www/*' -type f '!' -name '*.php'` $@/wwwroot
 
 clean:
 	@rm -rf ./out

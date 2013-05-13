@@ -14,7 +14,7 @@ LDFLAGS = -Wl,-gc-sections -Wl,-Map=$(BIN)/charliev2.map
 
 HEX_FLASH_FLAGS = -R .eeprom -R .fuse -R .lock -R .signature
 
-APP_FILES = $(wildcard $(patsubst %,$(SRC)/%,*.* */*.* */*/*.* */*/*/*.* */*/*/*/*.*))
+APP_FILES = $(wildcard $(patsubst %,$(SRC)/%,*.* */*.* */*/*.* */*/*/*.* */*/*/*/*.*)) $(SRC)/net/php_code.h
 APP_SOURCES = $(filter %.c,$(APP_FILES))
 
 all: charliev2
@@ -23,6 +23,9 @@ charliev2: $(BIN)/charliev2.elf $(BIN)/charliev2.hex checksize
 
 $(BIN)/charliev2.elf: $(APP_FILES)
 	@mkdir -p $(BIN) && $(CC) -o $@ $(CFLAGS) $(LDFLAGS) $(INCLUDES) $(APP_SOURCES)
+
+$(SRC)/net/php_code.h: $(wildcard ../filesys/src/www/*.php)
+	@../tools/compile_php.py ../filesys/src/www $@
 
 %.hex: %.elf
 	@avr-objcopy -O ihex $(HEX_FLASH_FLAGS) $< $@

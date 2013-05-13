@@ -28,82 +28,8 @@
 #include "php_impl.h"
 #include "charlie.h"
 
-#define IS_PI(x) ((x==NAME_PI_XML) || (x==NAME_PI_XSL))
-
-// Note: these are offsets in the PHP_TOKENS string
-#define NAME_NONE                 0
-#define NAME_PAGE                 1
-#define NAME_ID                   6
-#define NAME_DATETIME             9
-#define NAME_CURRENT             18
-#define NAME_LOG                 26
-#define NAME_RECORDS             30
-#define NAME_PLANT               38
-#define NAME_HUMID               44
-#define NAME_ILUM                50
-#define NAME_ROW                 55
-#define NAME_EVENT               59
-#define NAME_CODE                65
-#define NAME_DATA                70
-#define NAME_VERSION             75
-#define NAME_ENCODING            83
-#define NAME_TYPE                92
-#define NAME_HREF                97
-#define NAME_FROM               102
-#define NAME_TO                 107
-#define NAME_PAGES              110
-#define NAME_PERPAGE            116
-#define NAME_REVERSE            124
-#define NAME_CONFIG             132
-#define NAME_PLANTS             139
-#define NAME_RECORDING          146
-#define NAME_NET                156
-#define NAME_ALERTS             160
-#define NAME_TIMESVR            167
-#define NAME_MIN                175
-#define NAME_MAX                179
-#define NAME_FLAGS              183
-#define NAME_INTERVAL           189
-#define NAME_MAC                198
-#define NAME_IP                 202
-#define NAME_PORT               205
-#define NAME_TZDELTA            210
-#define NAME_PI_XML             218
-#define NAME_PI_XSL             223
-#define NAME_TAB                239
-#define NAME_EXECUTED           243
-
-static const char PHP_TOKENS[] PROGMEM =
-    "\0page\0id\0datetime\0current\0log\0records\0plant\0humid\0ilum\0"
-    "row\0event\0code\0data\0version\0encoding\0type\0href\0from\0to\0"
-    "pages\0perPage\0reverse\0config\0plants\0recording\0net\0alerts\0"
-    "timesvr\0min\0max\0flags\0interval\0mac\0ip\0port\0tzdelta\0"
-    "?xml\0?xml-stylesheet\0tab\0executed\0";
-
-#define TOK(x) (PHP_TOKENS + (x))
-
-#define PHP_PAGES_COUNT           5
-
-#define PHP_PAGE_HEADER           0
-#define PHP_PAGE_HOME             1
-#define PHP_PAGE_RECORDS          2
-#define PHP_PAGE_LOG              3
-#define PHP_PAGE_CONFIG           4
-#define PHP_PAGE_NONE             5
-
-static const char PHP_PAGES[] PROGMEM =
-    "/header.php\0"
-    "/home.php\0"
-    "/records.php\0"
-    "/log.php\0"
-    "/config.php";
-
-static const char PHP_PAGE_IDS[] PROGMEM =
-    "headerPage\0"
-    "homePage\0"
-    "recordsPage\0"
-    "logPage\0"
-    "configPage\0";
+typedef void (*php_conv_fn_t)(char *, void *);
+typedef bool (*php_routine_fn_t)(void);
 
 #define PHP_TAB_PLANTS            1
 #define PHP_TAB_NETWORK           2
@@ -119,24 +45,31 @@ static const char PHP_PAGE_IDS[] PROGMEM =
 #define PHP_CMD_PURGE_LOG         3
 #define PHP_CMD_PURGE_RECORDS     4
 
-#define PHP_STAT_OPEN_NODE        0
-#define PHP_STAT_READ_ATTR        1
-#define PHP_STAT_END_ATTR         2
-#define PHP_STAT_READ_CHILDREN    3
-#define PHP_STAT_READ_TEXT        4
-#define PHP_STAT_CLOSE_NODE       5
-#define PHP_STAT_DONE             6
-
+#define PHP_NODE_STACK_SIZE       8
+#define PHP_CALL_STACK_SIZE       4
 #define PHP_MAX_CHUNK_SIZE       64
 
-struct {
+static struct {
+    char chunk[PHP_MAX_CHUNK_SIZE];
     uint8_t dribble; // how much of the current chunk has been read
-
-    uint8_t state;
-    uint8_t xml_stack[12];
-    uint8_t xml_level;
-
-    uint8_t page;
+    bool finished;
+    
+    uint8_t node_stack[PHP_NODE_STACK_SIZE];
+    uint8_t node_stack_ptr;
+    uint16_t call_stack[PHP_CALL_STACK_SIZE];
+    uint8_t call_stack_ptr;
+    bool tag_decl_open;
+    bool attr_open;
+    
+    uint16_t pc;
+    bool truth;
+    
+    uint8_t content_type;
+    PGM_P download_filename;
+    
+    uint8_t page_id;
+    time_t render_date;
+    
     struct {
         uint16_t page;
         uint16_t per_page;
@@ -147,31 +80,21 @@ struct {
         uint8_t command;
         uint8_t checkboxes;
     } params;
-
-    struct {
-        bool export;
-        bool first;
-        uint8_t col;
-    } csv;
     
-    time_t render_date;
-    
-    Query query;
-    union {
-        Record record;
-        LogEntry event;
-    } entry;
-    uint8_t plant_idx;
-
     struct {
         uint16_t pages;
+        Query query;
+        union {
+            Record record;
+            LogEntry event;
+        } entry;
+        uint8_t plant_idx;
+        union {
+            PlantStatus status;
+            PlantConfig cfg;
+        } plant;
     } vars;
 } php;
-
-static void _php_get_xml_node_val(char *buf)
-{
-    buf[0] = 0;
-}
 
 void _php_format_uint8(char *buf, uint8_t *value_ptr)
 {
@@ -198,641 +121,201 @@ void _php_format_datetime(char *buf, time_t *value_ptr)
     time_format_rfc3339(buf, *value_ptr);
 }
 
+void _php_format_datetime_csv(char *buf, time_t *value_ptr)
+{
+    time_format_rfc3339(buf, *value_ptr);
+    buf[10] = ' ';
+}
+
+void _php_format_event_type(char *buf, uint8_t *value_ptr)
+{
+    strcpy_P(buf, strset_get(PSTR("Info\0Note\0Error\0\0"), ((*value_ptr) >> 6) & 3));
+}
+
+void _php_format_event_message(char *buf, LogEntry *value_ptr)
+{
+    log_format_message(buf, value_ptr);
+}
+
 #define _php_format_ip           ip_format
 #define _php_format_mac          eth_format_mac
-#define _php_format_fixedstr     strcpy_P
 
-static void _php_get_xml_attr_val(char *buf)
+#define PHP_UCODE_END                      (0x00)
+#define PHP_UCODE_RET                      (0x01)
+#define PHP_UCODE_CLOSE_TAG                (0x02)
+#define PHP_UCODE_TEXT(string)             (0x03), (string)
+#define PHP_UCODE_JUMP(addr)               (0x10 + ((addr) >> 8)), ((addr) & 0xff)
+#define PHP_UCODE_CALL(addr)               (0x18 + ((addr) >> 8)), ((addr) & 0xff)
+#define PHP_UCODE_FORMAT(var,conv)         (0x20 + (conv)), (var)
+#define PHP_UCODE_ROUTINE(routine)         (0x40 + (routine))
+#define PHP_UCODE_ATTR(attr)               (0x80 + (attr))
+#define PHP_UCODE_OPEN_TAG(node)           (0xc0 + (node))
+
+#include "php_code.h"
+
+static void _php_close_attr(void)
 {
-    time_t time = 0;
-    PGM_P page_id = NULL;
-    uint8_t node = php.xml_level
-        ? php.xml_stack[php.xml_level-1] : NAME_NONE;
-    uint8_t attr = php.xml_stack[php.xml_level];
+    if (php.attr_open) {
+        strcat_P(php.chunk, PSTR("\""));
+        php.attr_open = FALSE;
+    }
+}
+
+static void _php_close_tag_decl(void)
+{
+    uint8_t node_id;
+    PGM_P node_name;
+    bool is_pi;
     
-    buf[0] = 0;
-    switch (attr) {
-        case NAME_ID:
-            page_id = strset_get(PHP_PAGE_IDS, php.page);
-            _php_format_fixedstr(buf, page_id);
-            break;
-        case NAME_HUMID:
-            _php_format_uint8(buf, &php.entry.record.plants[php.plant_idx].humidity);
-            break;
-        case NAME_ILUM:
-            _php_format_uint8(buf, &php.entry.record.plants[php.plant_idx].ilumination);
-            break;
-        case NAME_MIN:
-            _php_format_uint8(buf, &cfg.plants[php.plant_idx].watering_start_threshold);
-            break;
-        case NAME_MAX:
-            _php_format_uint8(buf, &cfg.plants[php.plant_idx].watering_stop_threshold);
-            break;
-        case NAME_FLAGS:
-            _php_format_uint8(buf, &cfg.plants[php.plant_idx].flags);
-            break;
-        case NAME_TZDELTA:
-            _php_format_int16(buf, &cfg.timezone_delta);
-            break;
-        case NAME_EXECUTED:
-            _php_format_uint8(buf, &php.params.command);
-            break;
-        case NAME_PORT:
-            _php_format_uint16(buf, &cfg.alerts_port);
-            break;
-        case NAME_DATETIME:
-            switch (node) {
-                case NAME_PAGE:
-                    time = php.render_date;
-                    break;
-                case NAME_ROW:
-                    time = php.entry.record.time;
-                    break;
-                case NAME_EVENT:
-                    time = php.entry.event.time;
-                    break;
-            }
-            _php_format_datetime(buf, &time);
-            break;
-        case NAME_CODE:
-            _php_format_uint8(buf, &php.entry.event.code);
-            break;
-        case NAME_DATA:
-            _php_format_uint32(buf, &php.entry.event.data);
-            break;
-        case NAME_VERSION:
-            _php_format_fixedstr(buf, PSTR("1.0"));
-            break;
-        case NAME_ENCODING:
-            _php_format_fixedstr(buf, PSTR("UTF-8"));
-            break;
-        case NAME_TYPE:
-            _php_format_fixedstr(buf, PSTR("text/xsl"));
-            break;
-        case NAME_HREF:
-            _php_format_fixedstr(buf, PSTR("main.xsl"));
-            break;
-        case NAME_PAGE:
-            _php_format_uint16(buf, &php.params.page);
-            break;
-        case NAME_PAGES:
-            _php_format_uint16(buf, &php.vars.pages);
-            break;
-        case NAME_PERPAGE:
-            _php_format_uint16(buf, &php.params.per_page);
-            break;
-        case NAME_REVERSE:
-            _php_format_uint8(buf, &php.params.reverse);
-            break;
-        case NAME_TAB:
-            _php_format_uint8(buf, &php.params.tab);
-            break;
-        case NAME_INTERVAL:
-            _php_format_uint16(buf, &cfg.recording_interval);
-            break;
-        case NAME_FROM:
-            _php_format_datetime(buf, &php.params.from_date);
-            break;
-        case NAME_TO:
-            _php_format_datetime(buf, &php.params.to_date);
-            break;
-        case NAME_IP:
-            _php_format_ip(buf, (node == NAME_ALERTS)
-                ? (&cfg.alerts_server_ip) : (&cfg.time_server_ip));
-            break;
-        case NAME_MAC:
-            _php_format_mac(buf, &cfg.mac_addr);
-            break;
-    }
-}
-
-static void _php_get_xml_chunk(char *buf)
-{
-    uint8_t pre_top = php.xml_level
-        ? php.xml_stack[php.xml_level - 1] : NAME_NONE;
-    uint8_t top = php.xml_stack[php.xml_level];
-
-    buf[0] = 0;
-    switch (php.state) {
-        case PHP_STAT_OPEN_NODE:
-            buf[0] = '<';
-            strcpy_P(buf + 1, TOK(pre_top));
-            break;
-        case PHP_STAT_READ_ATTR:
-            buf[0] = ' ';
-            strcpy_P(buf + 1, TOK(top));
-            strcat_P(buf, PSTR("=\""));
-            _php_get_xml_attr_val(buf + strlen(buf));
-            strcat_P(buf, PSTR("\""));
-            break;
-        case PHP_STAT_END_ATTR:
-            if (IS_PI(pre_top)) {
-                strcpy_P(buf, PSTR("?>"));
-                break;
-            }
-            strcpy_P(buf, PSTR(">"));
-            break;
-        case PHP_STAT_READ_TEXT:
-            _php_get_xml_node_val(buf);
-            break;
-        case PHP_STAT_CLOSE_NODE:
-            if (!pre_top || IS_PI(pre_top)) {
-                break;
-            }
-
-            buf[0] = '<';
-            buf[1] = '/';
-            strcpy_P(buf + 2, TOK(pre_top));
-            strcat_P(buf, PSTR(">"));
-            break;
-    }
-}
-
-static bool _php_next_xml_child(void)
-{
-    uint8_t parent = php.xml_level
-        ? php.xml_stack[php.xml_level - 1] : NAME_NONE;
-    uint8_t prev_sibling = php.xml_stack[php.xml_level];
-    uint8_t node = NAME_NONE;
-    Query *query = &(php.query);
+    _php_close_attr();
     
-    switch (parent) {
-        case NAME_NONE:
-            switch (prev_sibling) {
-                case NAME_NONE:
-                    node = NAME_PI_XML;
-                    break;
-                case NAME_PI_XML:
-                    node = NAME_PI_XSL;
-                    break;
-                case NAME_PI_XSL:
-                    node = NAME_PAGE;
-                    break;
-            }
-            break;
-        case NAME_PAGE:
-            switch (php.page) {
-                case PHP_PAGE_HOME:
-                    switch (prev_sibling) {
-                        case NAME_NONE:
-                            node = NAME_CURRENT;
-                            plants_get_latest_record(&(php.entry.record));
-                            break;
-                        case NAME_CURRENT:
-                            node = NAME_LOG;
-                            log_get_query(query);
-                            query_reverse(query);
-                            query_limit(query,5);
-                            break;
-                        case NAME_LOG:
-                            node = NAME_RECORDS;
-                            rec_get_query(query);
-                            query_reverse(query);
-                            query_limit(query,5);
-                            break;
-                    }
-                    break;
-                case PHP_PAGE_RECORDS:
-                    if (!prev_sibling) {
-                        node = NAME_RECORDS;
-                    }
-                    break;
-                case PHP_PAGE_LOG:
-                    if (!prev_sibling) {
-                        node = NAME_LOG;
-                    }
-                    break;
-                case PHP_PAGE_CONFIG:
-                    if (!prev_sibling) {
-                        node = NAME_CONFIG;
-                    }
-                    break;
-            }
-            break;
-        case NAME_CURRENT:
-        case NAME_ROW:
-        case NAME_PLANTS:
-            php.plant_idx = (prev_sibling == NAME_PLANT)
-                ? (php.plant_idx + 1) : 0;
-            node = (php.plant_idx < CFG_MAX_PLANTS)
-                ? NAME_PLANT : NAME_NONE;
-            break;
-        case NAME_RECORDS:
-            node = query_get(query, &php.entry.record) ? NAME_ROW : NAME_NONE;
-            query_next(query);
-            break;
-        case NAME_LOG:
-            node = query_get(query, &php.entry.event) ? NAME_EVENT : NAME_NONE;
-            query_next(query);
-            break;
-        case NAME_CONFIG:
-            switch (prev_sibling) {
-                case NAME_NONE:
-                    node = NAME_PLANTS;
-                    break;
-                case NAME_PLANTS:
-                    node = NAME_RECORDING;
-                    break;
-                case NAME_RECORDING:
-                    node = NAME_NET;
-                    break;
-                case NAME_NET:
-                    node = NAME_ALERTS;
-                    break;
-                case NAME_ALERTS:
-                    node = NAME_TIMESVR;
-                    break;
-            }
-            break;
-    }
-
-    if (!node) {
-        return FALSE;
-    }
-
-    php.xml_stack[php.xml_level++] = node;
-    php.xml_stack[php.xml_level] = NAME_NONE;
-
-    return TRUE;
-}
-
-static bool _php_next_xml_attr(void)
-{
-    uint8_t node = php.xml_level
-        ? php.xml_stack[php.xml_level - 1] : NAME_NONE;
-    uint8_t prev_attr = php.xml_stack[php.xml_level];
-    uint8_t attr = NAME_NONE;
-
-    switch (node) {
-        case NAME_PI_XML:
-            switch (prev_attr) {
-                case NAME_NONE:
-                    attr = NAME_VERSION;
-                    break;
-                case NAME_VERSION:
-                    attr = NAME_ENCODING;
-                    break;
-            }
-            break;
-        case NAME_PI_XSL:
-            switch (prev_attr) {
-                case NAME_NONE:
-                    attr = NAME_TYPE;
-                    break;
-                case NAME_TYPE:
-                    attr = NAME_HREF;
-                    break;
-            }
-            break;
-        case NAME_PAGE:
-            switch (prev_attr) {
-                case NAME_NONE:
-                    attr = NAME_ID;
-                    break;
-                case NAME_ID:
-                    attr = NAME_DATETIME;
-                    break;
-                case NAME_DATETIME:
-                    attr = php.params.command ? NAME_EXECUTED : NAME_NONE;
-                    break;
-            }
-            break;
-        case NAME_PLANT:
-            if (php.page == PHP_PAGE_CONFIG) {
-                switch (prev_attr) {
-                    case NAME_NONE:
-                        attr = NAME_MIN;
-                        break;
-                    case NAME_MIN:
-                        attr = NAME_MAX;
-                        break;
-                    case NAME_MAX:
-                        attr = NAME_FLAGS;
-                        break;
-                }
-                break;
-            }
-            switch (prev_attr) {
-                case NAME_NONE:
-                    attr = (php.entry.record.plants[php.plant_idx].flags
-                        & PLANT_FLAGS_NOT_INSTALLED)
-                        ? NAME_NONE : NAME_HUMID;
-                    break;
-                case NAME_HUMID:
-                    attr = NAME_ILUM;
-                    break;
-            }
-            break;
-        case NAME_ROW:
-            attr = (prev_attr == NAME_NONE) ? NAME_DATETIME : NAME_NONE; 
-            break;
-        case NAME_EVENT:
-            switch (prev_attr) {
-                case NAME_NONE:
-                    attr = NAME_DATETIME;
-                    break;
-                case NAME_DATETIME:
-                    attr = NAME_CODE;
-                    break;
-                case NAME_CODE:
-                    attr = NAME_DATA;
-                    break;
-            }
-            break;
-        case NAME_RECORDS:
-        case NAME_LOG:
-            if (php.page == PHP_PAGE_HOME) {
-                break;
-            }
-            switch (prev_attr) {
-                case NAME_NONE:
-                    attr = NAME_PAGE;
-                    break;
-                case NAME_PAGE:
-                    attr = NAME_PAGES;
-                    break;
-                case NAME_PAGES:
-                    attr = NAME_PERPAGE;
-                    break;
-                case NAME_PERPAGE:
-                    attr = NAME_FROM;
-                    break;
-                case NAME_FROM:
-                    attr = NAME_TO;
-                    break;
-                case NAME_TO:
-                    attr = NAME_REVERSE;
-                    break;
-            }
-            break;
-        case NAME_RECORDING:
-            attr = (prev_attr == NAME_NONE) ? NAME_INTERVAL : NAME_NONE;
-            break;
-        case NAME_NET:
-            attr = (prev_attr == NAME_NONE) ? NAME_MAC : NAME_NONE;
-            break;
-        case NAME_CONFIG:
-            attr = (prev_attr == NAME_NONE) ? NAME_TAB : NAME_NONE;
-            break;
-        case NAME_ALERTS:
-            switch (prev_attr) {
-                case NAME_NONE:
-                    attr = NAME_IP;
-                    break;
-                case NAME_IP:
-                    attr = NAME_PORT;
-                    break;
-            }
-            break;
-        case NAME_TIMESVR:
-            switch (prev_attr) {
-                case NAME_NONE:
-                    attr = NAME_IP;
-                    break;
-                case NAME_IP:
-                    attr = NAME_TZDELTA;
-                    break;
-            }
-            break;
-    }
-
-    php.xml_stack[php.xml_level] = attr;
-    
-    if (!attr) {
-        return FALSE;
-    }
-
-    return TRUE;
-}
-
-static void _php_next_xml_chunk(void)
-{
-    switch (php.state) {
-        case PHP_STAT_READ_TEXT:
-            php.state = PHP_STAT_READ_CHILDREN;
-            break;
-        case PHP_STAT_READ_CHILDREN:
-            php.state = _php_next_xml_child()
-                ? PHP_STAT_OPEN_NODE : PHP_STAT_CLOSE_NODE;
-            break;
-        case PHP_STAT_OPEN_NODE:
-        case PHP_STAT_READ_ATTR:
-            php.state = _php_next_xml_attr()
-                ? PHP_STAT_READ_ATTR : PHP_STAT_END_ATTR;
-            break;
-        case PHP_STAT_CLOSE_NODE:
-            if (!php.xml_level) {
-                php.state = PHP_STAT_DONE;
-                return;
-            }
-            php.xml_level--;
-            php.state = PHP_STAT_READ_TEXT;
-            break;
-        case PHP_STAT_END_ATTR:
-            php.state = PHP_STAT_READ_TEXT;
-            break;
-    }
-}
-
-static inline uint8_t _php_csv_col_count(void)
-{
-    return  (php.page == PHP_PAGE_RECORDS) ? (1 + 3 * CFG_MAX_PLANTS) : 3;
-}
-
-static void _php_format_date_csv(time_t datetime, char *buffer)
-{
-    time_format_rfc3339(buffer, datetime);
-    buffer[10] = ' ';
-}
-
-static void _php_get_csv_header_chunk(char *buf)
-{
-    uint8_t aspect;
-    
-    *buf = 0;
-    if (php.page == PHP_PAGE_RECORDS) {
-        // Records page
-        if (php.csv.col > 0) {
-            aspect = (php.csv.col - 1) % 3;
-
-            strcpy_P(buf, strset_get(
-                PSTR("Humid # [%]\0Ilum # [%]\0Info #"), aspect));
-            *strchr(buf, '#') = '1' + (php.csv.col - 1) / 3;
-        } else {
-            strcpy_P(buf, PSTR("Date"));
-        }
-    } else {
-        // Log page
-        strcpy_P(buf, strset_get(PSTR("Date\0Type\0Message"), php.csv.col));
-    }
-}
-
-static void _php_get_csv_body_chunk(char *buf)
-{
-    uint8_t aspect;
-    PlantStatus *plant;
-    
-    *buf = 0;
-    if (php.page == PHP_PAGE_RECORDS) {
-        // Records page
-        if (php.csv.col > 0) {
-            aspect = (php.csv.col - 1) % 3;
-            plant = php.entry.record.plants + ((php.csv.col - 1) / 3);
-            
-            if (aspect < 2) {
-                if (!(plant->flags & PLANT_FLAGS_NOT_INSTALLED))
-                    itoa10(aspect ? plant->ilumination : plant->humidity, buf);
-            }
-        } else {
-            _php_format_date_csv(php.entry.record.time, buf);
-        }
-    } else {
-        // Log page
-        switch (php.csv.col) {
-            case 0:
-                _php_format_date_csv(php.entry.event.time, buf);
-                break;
-            case 1:
-                strcpy_P(buf, strset_get(PSTR("Info\0Note\0Error\0\0"),
-                    (php.entry.event.code >> 6) & 3));
-                break;
-            case 2:
-                log_format_message(buf, &php.entry.event);
-                break;
-        }
-    }
-}
-
-static void _php_get_csv_chunk(char *buf)
-{
-    uint8_t tok_len;
-
-    if (php.csv.first) {
-        _php_get_csv_header_chunk(buf);
-    } else {
-        _php_get_csv_body_chunk(buf);
-    }
-
-    tok_len = strlen(buf);
-    if (php.csv.col == _php_csv_col_count() - 1) {
-        buf[tok_len++] = '\r';
-        buf[tok_len++] = '\n';
-    } else {
-        buf[tok_len++] = ',';
-    }
-    buf[tok_len] = 0;
-}
-
-static void _php_next_csv_chunk(void)
-{
-    void *target;
-    
-    php.csv.col++;
-    if (php.csv.col >= _php_csv_col_count()) {
-        target = (php.page == PHP_PAGE_RECORDS)
-            ? (void *)&php.entry.record : (void *)&php.entry.event;
-        if (!query_get(&(php.query), target)) {
-            php.state = PHP_STAT_DONE;
-        }
-        query_next(&(php.query));
+    if (php.tag_decl_open) {
+        node_id = php.node_stack[php.node_stack_ptr - 1];
+        node_name = strset_get(PHP_NODES, node_id);
+        is_pi = (pgm_read_byte(node_name) == '?');
         
-        php.csv.first = FALSE;
-        php.csv.col = 0;
+        strcat_P(php.chunk, is_pi ? PSTR("?>") : PSTR(">"));
+        php.tag_decl_open = FALSE;
     }
 }
 
-static void _php_get_chunk(char *buf)
+static void _php_exec_open_tag(uint8_t opcode)
 {
-    if (php.csv.export) {
-        _php_get_csv_chunk(buf);
-    } else {
-        _php_get_xml_chunk(buf);
-    }
-}
-
-static void _php_next_chunk(void)
-{
-    if (php.csv.export) {
-        _php_next_csv_chunk();
-    } else {
-        _php_next_xml_chunk();
-    }
-}
-
-static void _php_prepare_query(void)
-{
-    Query *query = &(php.query);
+    uint8_t node_id = opcode & 0x3f;
     
-    if (php.page == PHP_PAGE_LOG) {
-        log_get_query(query);
-    } else {
-        rec_get_query(query);
-    }
+    _php_close_tag_decl();
     
-    if (php.params.from_date) {
-        query_filter_after(query, php.params.from_date);
-    }
-    if (php.params.to_date) {
-        query_filter_before(query,
-            php.params.to_date + TIME_SECONDS_PER_DAY - 1);
-    }
-    if (php.params.reverse) {
-        query_reverse(query);
-    }
-    if (!php.csv.export) {
-        query_paginate(query, php.params.per_page,
-            &(php.params.page), &(php.vars.pages));
-    }
+    php.node_stack[php.node_stack_ptr++] = node_id;
+    
+    strcat_P(php.chunk, PSTR("<"));
+    strcat_P(php.chunk, strset_get(PHP_NODES, node_id));
+    
+    php.tag_decl_open = TRUE;
 }
 
-static void _php_execute(void)
+static void _php_exec_close_tag(void)
 {
-    uint8_t i;
+    uint8_t node_id;
     
-    switch (php.page) {
-        case PHP_PAGE_RECORDS:
-        case PHP_PAGE_LOG:
-            if (php.params.command == PHP_CMD_EXPORT) {
-                php.csv.export = TRUE;
-                php.csv.col = 0;
-                php.csv.first = TRUE;
-            }
-            _php_prepare_query();
+    _php_close_tag_decl();
+    
+    node_id = php.node_stack[--php.node_stack_ptr];
+        
+    strcat_P(php.chunk, PSTR("</"));
+    strcat_P(php.chunk, strset_get(PHP_NODES, node_id));
+    strcat_P(php.chunk, PSTR(">"));
+}
+
+static void _php_exec_attr(uint8_t opcode)
+{
+    _php_close_attr();
+    
+    strcat_P(php.chunk, PSTR(" "));
+    strcat_P(php.chunk, strset_get(PHP_ATTRS, opcode & 0x3f));
+    strcat_P(php.chunk, PSTR("=\""));
+    
+    php.attr_open = TRUE;
+}
+
+static void _php_exec_format(uint8_t opcode)
+{
+    uint8_t fn_index = opcode & 0x1f;
+    uint8_t var_index = pgm_read_byte(PHP_CODE + (php.pc++));
+    php_conv_fn_t fn = (php_conv_fn_t)pgm_read_word(PHP_CONVERSIONS + fn_index);
+    void *addr = (void *)pgm_read_word(PHP_VARS + var_index);
+    
+    fn(php.chunk + strlen(php.chunk), addr);
+}
+
+static void _php_exec_text()
+{
+    uint8_t str_id = pgm_read_byte(PHP_CODE + (php.pc++));
+    
+    strcat_P(php.chunk, strset_get(PHP_STRINGS, str_id));
+}
+
+static void _php_exec_ret()
+{
+    php.pc = php.call_stack[--php.call_stack_ptr];
+}
+
+static void _php_exec_jump(uint8_t opcode)
+{
+    uint16_t addr = ((opcode & 0x07) << 8) + pgm_read_byte(PHP_CODE + (php.pc++));
+    
+    if (php.truth)
+        php.pc = addr;
+}
+
+static void _php_exec_call(uint8_t opcode)
+{
+    uint16_t addr = ((opcode & 0x07) << 8) + pgm_read_byte(PHP_CODE + (php.pc++));
+    
+    php.call_stack[php.call_stack_ptr++] = php.pc;
+    php.pc = addr;
+}
+
+static void _php_exec_routine(uint8_t opcode)
+{
+    uint8_t fn_index = opcode & 0x3f;
+    php_routine_fn_t fn = (php_routine_fn_t)pgm_read_word(PHP_ROUTINES + fn_index);
+    
+    php.truth = fn();
+}
+
+static bool _php_next_chunk(void)
+{
+    bool just_called;
+    uint8_t op;
+    
+    if (php.finished)
+        return FALSE;
+    
+    php.chunk[0] = 0;
+    php.dribble = 0;
+    
+    just_called = FALSE;
+    
+    while (TRUE) {
+        if (!just_called)
+            php.truth = TRUE;
+        else
+            just_called = FALSE;
+        
+        op = pgm_read_byte(PHP_CODE + (php.pc++));
+        
+        if (op == PHP_UCODE_END) {
+            php.finished = TRUE;
+            return FALSE;
+        } else if (op == PHP_UCODE_RET) {
+            _php_exec_ret();
+        } else if (op == PHP_UCODE_CLOSE_TAG) {
+            _php_exec_close_tag();
+        } else if (op == 0x03) {
+            _php_exec_text();
             break;
-        case PHP_PAGE_CONFIG:
-            switch (php.params.tab) {
-                case PHP_TAB_PLANTS:
-                    for (i = 0; i < CFG_MAX_PLANTS; i++) {
-                        if (php.params.checkboxes & _BV(i)) {
-                            cfg.plants[i].flags &= ~PLANT_CFG_FLAG_NOT_INSTALLED;
-                        } else {
-                            cfg.plants[i].flags |= ~PLANT_CFG_FLAG_NOT_INSTALLED;
-                        }
-                    }
-                    break;
-                case PHP_TAB_RESET:
-                    switch (php.params.command) {
-                        case PHP_CMD_SHUTDOWN:
-                            shutdown(FALSE);
-                            break;
-                        case PHP_CMD_RESTART:
-                            shutdown(TRUE);
-                            break;
-                        case PHP_CMD_PURGE_LOG:
-                            log_purge();
-                            break;
-                        case PHP_CMD_PURGE_RECORDS:
-                            rec_purge();
-                            break;
-                    }
-                    break;
-                default:
-                    if (php.params.command == PHP_CMD_SAVE) {
-                        cfg_save();
-                    }
-                    break;
-            }
+        } else if ((op & 0xf8) == 0x10) {
+            _php_exec_jump(op);
+        } else if ((op & 0xf8) == 0x18) {
+            _php_exec_call(op);
+        } else if ((op & 0xe0) == 0x20) {
+            _php_exec_format(op);
+            break;
+        } else if ((op & 0xc0) == 0x40) {
+            _php_exec_routine(op);
+            just_called = TRUE;
+        } else if ((op & 0xc0) == 0x80) {
+            _php_exec_attr(op);
+            break;
+        } else if ((op & 0xc0) == 0xc0) {
+            _php_exec_open_tag(op);
+            break;
+        }
     }
+    
+    php.dribble = 0;
+    
+    return TRUE;
 }
 
 static void _php_default_params()
@@ -864,7 +347,7 @@ static void _php_read_params_phase1(PacketBuf *params)
             php.params.command = as_int;
         }
 
-        if (php.page == PHP_PAGE_CONFIG) {
+        if (php.page_id == PHP_PAGE_CONFIG_PHP) {
             if ((c == 't') && (!para_name[1])) {
                 php.params.tab = clamp(as_int, 1, 5);
             }
@@ -877,7 +360,7 @@ static void _php_read_params_phase1(PacketBuf *params)
                     php.params.page = max(as_int, 1);
                     break;
                 case 'r':
-                    php.params.reverse = !as_int;
+                    php.params.reverse = as_int;
                     break;
                 case 'Y':
                     from_year = as_int;
@@ -933,7 +416,7 @@ static void _php_read_params_phase2(PacketBuf *params)
         c3 = para_name[2]; // ATMEGA, or this could segfault :)
         as_int = atol(para_val);
     
-        if ((php.page == PHP_PAGE_CONFIG) && (php.params.command == PHP_CMD_SAVE)) {
+        if ((php.page_id == PHP_PAGE_CONFIG_PHP) && (php.params.command == PHP_CMD_SAVE)) {
             switch (c) {
                 case 'p':
                     plant_idx = c2-'1';
@@ -1002,20 +485,25 @@ static void _php_read_params(PacketBuf *params)
  */
 bool php_start(const char *url_path, PacketBuf *params)
 {
-    uint8_t page = strset_find(PHP_PAGES, PHP_PAGES_COUNT, url_path);
-    if (page == PHP_PAGE_NONE) {
+    php.page_id = strset_find(PHP_PAGES, PHP_PAGES_COUNT, url_path + 1);
+    if (php.page_id == PHP_PAGES_COUNT) {
         return FALSE;
     }
     
-    php.page = page;
+    php.content_type = HTTP_CONTENT_TYPE_TEXT_XML;
+    php.download_filename = NULL;
     php.render_date = time_get_raw();
-    php.csv.export = FALSE;
-    php.dribble = 0;
-    php.state = PHP_STAT_READ_TEXT;
+    
+    php.pc = pgm_read_word(PHP_PAGES_ENTRY + php.page_id);
+    php.truth = TRUE;
+    php.node_stack_ptr = 0;
+    php.call_stack_ptr = 0;
+    php.tag_decl_open = FALSE;
+    php.attr_open = FALSE;
+    php.finished = FALSE;
+    
     _php_read_params(params);
-    _php_execute();
-    php.xml_level = 0;
-    php.xml_stack[0] = NAME_NONE;
+    _php_next_chunk();
     
     return TRUE;
 }
@@ -1029,36 +517,26 @@ bool php_start(const char *url_path, PacketBuf *params)
  */
 uint16_t php_read(void *buffer, uint16_t length)
 {
-    char buf[PHP_MAX_CHUNK_SIZE];
-    uint8_t tok_len;
+    uint8_t chunk_len;
     uint16_t count, tot_count = 0;
 
-    if (php.state == PHP_STAT_DONE) {
-        return 0;
-    }
-
     while (length) {
-        _php_get_chunk(buf);
-        tok_len = strlen(buf);
+        chunk_len = strlen(php.chunk);
 
         count = length;
-        if (count + php.dribble > tok_len) {
-            count = tok_len - php.dribble;
+        if (count + php.dribble > chunk_len) {
+            count = chunk_len - php.dribble;
         }
         
-        memcpy(buffer, buf + php.dribble, count);
+        memcpy(buffer, php.chunk + php.dribble, count);
         php.dribble += count;
         buffer += count;
         tot_count += count;
         length -= count;
 
-        if (!count || (php.dribble == tok_len)) {
-            _php_next_chunk();
-            php.dribble = 0;
-            if (php.state == PHP_STAT_DONE) {
+        if (!count || (php.dribble == chunk_len))
+            if (!_php_next_chunk())
                 break;
-            }
-        }
     }
 
     return tot_count;
@@ -1069,7 +547,7 @@ uint16_t php_read(void *buffer, uint16_t length)
  */
 bool php_eof(void)
 {
-    return (php.state == PHP_STAT_DONE);
+    return php.finished && (php.dribble == strlen(php.chunk));
 }
 
 /**
@@ -1077,7 +555,7 @@ bool php_eof(void)
  */
 uint8_t php_get_content_type(void)
 {
-    return php.csv.export ? HTTP_CONTENT_TYPE_TEXT_CSV : HTTP_CONTENT_TYPE_TEXT_XML;
+    return php.content_type;
 }
 
 /**
@@ -1085,7 +563,7 @@ uint8_t php_get_content_type(void)
  */
 bool php_is_download(void)
 {
-    return php.csv.export;
+    return php.download_filename != NULL;
 }
 
 /**
@@ -1094,6 +572,5 @@ bool php_is_download(void)
  */
 void php_get_download_filename(char *buf)
 {
-    strcpy_P(buf, (php.page == PHP_PAGE_RECORDS) ?
-        PSTR("records.csv") : PSTR("log.csv"));
+    strcpy_P(buf, php.download_filename);
 }
