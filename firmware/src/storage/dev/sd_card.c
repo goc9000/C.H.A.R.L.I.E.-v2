@@ -129,7 +129,8 @@ uint8_t card_write_block(const void *buffer, uint32_t address)
 {
     uint16_t i;
     uint16_t tries;
-    uint8_t stat, dummy;
+    uint8_t stat;
+    uint8_t dummy __attribute__((unused));
     
     card_chip_select();
     

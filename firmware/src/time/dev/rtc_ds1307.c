@@ -64,6 +64,8 @@ static bool _rtc_write_seq(uint8_t reg, const uint8_t *buf, uint8_t count)
     return ok;
 }
 
+static uint8_t _rtc_read(uint8_t reg) __attribute__((unused));
+
 static uint8_t _rtc_read(uint8_t reg)
 {
     uint8_t data;
