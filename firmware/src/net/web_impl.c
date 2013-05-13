@@ -21,6 +21,8 @@
 #define BODY_PHP        3
 
 static struct { 
+    bool just_started;
+    
     struct {
         uint16_t http_code;
         uint8_t content_type;
@@ -133,6 +135,7 @@ bool _web_serve_dynamic_resource(const char *path, PacketBuf *data)
  */
 void web_new_request(void)
 {
+    web.just_started = TRUE;
     web.response.headers_sent = FALSE;
 }
 
@@ -148,8 +151,16 @@ bool web_receive_request(PacketBuf *data)
     char term;
     uint8_t http_cmd;
     
+    if (!web.just_started) {
+        // Any data sent after the initial HTTP command, i.e. headers etc. is
+        // simply ignored
+        return FALSE;
+    }
+    web.just_started = FALSE;
+    
     // parse command
     term = pktbuf_get_token(data, buf, 32, PSTR(" "));
+    
     http_cmd = http_parse_command(buf);
     if (!term || (http_cmd == HTTP_COMMAND_UNKNOWN)) {
         _web_serve_error(HTTP_CODE_NOT_IMPLEMENTED);
