@@ -11,8 +11,10 @@
 #include <stdlib.h>
 
 #include "interf/rs232.h"
+#include "net/dev/enc28j60.h"
 #include "net/proto/ip.h"
 #include "net/proto/eth.h"
+#include "net/packet_buf.h"
 #include "effectors/pump.h"
 #include "util/hex.h"
 #include "util/misc.h"
@@ -27,6 +29,7 @@ void _debug_printf(PGM_P format, ...)
     uint16_t length;
     uint8_t alt, byt;
     char c;
+    PacketBuf *pkt;
     
     va_start(args, format);
     
@@ -44,10 +47,10 @@ void _debug_printf(PGM_P format, ...)
                 case 's':
                     rs232_puts(va_arg(args, const char*));
                     continue;
-                case 'S':
+                case 'S': // Program memory string
                     rs232_puts_P(va_arg(args, PGM_P));
                     continue;
-                case 'X':
+                case 'X': // Hexdump (must be followed by int specifying length)
                     ptr = (uint8_t *)va_arg(args, void*);
                     length = va_arg(args, int);
                     alt = 0;
@@ -69,13 +72,26 @@ void _debug_printf(PGM_P format, ...)
                         }
                     }
                     continue;
-                case 'i':
+                case 'i': // IP address
                     ip_format(buf, va_arg(args, ip_addr_t*));
                     rs232_puts(buf);
                     continue;
-                case 'm':
+                case 'm': // MAC address
                     eth_format_mac(buf, va_arg(args, mac_addr_t*));
                     rs232_puts(buf);
+                    continue;
+                case 'k': // Packet buffer
+                    pkt = va_arg(args, PacketBuf*);
+                    rs232_puts_P(PSTR("<@"));
+                    hex_format(buf, 4, pkt->start);
+                    rs232_puts(buf);
+                    rs232_puts_P(PSTR(","));
+                    rs232_puts(itoa10(pkt->length, buf));
+                    rs232_puts_P(PSTR("b:\""));
+                    enc28j60_read_mem_at(buf, pkt->start, 8);
+                    buf[8] = 0;
+                    rs232_puts(buf);
+                    rs232_puts_P(PSTR("\">"));
                     continue;
                 case '%':
                     rs232_putc('%');
