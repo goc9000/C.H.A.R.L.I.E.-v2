@@ -32,8 +32,10 @@ const uint16_t __AREA_LIMITS[(AREA_COUNT+1) * 2] PROGMEM = {
 #define AREA_BOT(area) pgm_read_word(__AREA_LIMITS + ((area) << 1))
 #define AREA_TOP(area) pgm_read_word(__AREA_LIMITS + ((area) << 1) + 1)
 
-bool _write_sanity_check(const PacketBuf *packet, int16_t amount)
+static bool _write_sanity_check(const PacketBuf *packet __attribute__((unused)),
+    int16_t amount __attribute__((unused)))
 {
+#if CFG_DEBUG_ENABLED==1
     if (pktbuf_area(packet) == PKTBUF_AREA_RECEIVED) {
         debug_printf("Attempted write to received packet!\n");
         return FALSE;
@@ -52,7 +54,7 @@ bool _write_sanity_check(const PacketBuf *packet, int16_t amount)
             return FALSE;
         }
     }
-    
+#endif    
     return TRUE;
 }
 
