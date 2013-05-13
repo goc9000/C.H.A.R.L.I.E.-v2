@@ -1,0 +1,20 @@
+uPHP instruction encoding
+-------------------------
+
+END       : 0 0 0 0 0 0 0 0
+RET       : 0 0 0 0 0 0 0 1
+CLOSE_TAG : 0 0 0 0 0 0 1 0
+TEXT      : 0 0 0 0 0 0 1 1   s s s s s s s s : s = string_id
+--        : 0 0 0 0 0 1 - -
+--        : 0 0 0 0 1 - - -
+JUMP      : 0 0 0 1 0 l l l   l l l l l l l l : l - label_id
+CALL      : 0 0 0 1 1 l l l   l l l l l l l l : l - label_id
+FORMAT    : 0 0 1 c c c c c   v v v v v v v v : c = conversion, v = variable
+ROUTINE   : 0 1 r r r r r r : r - routine_id
+ATTR      : 1 0 a a a a a a : a - attr_id
+OPEN_TAG  : 1 1 t t t t t t : t - tag _id
+
+
+Note: JUMP means "Jump if the immediately preceding instruction was a ROUTINE
+and it returned TRUE".
+
