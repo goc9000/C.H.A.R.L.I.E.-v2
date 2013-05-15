@@ -8,9 +8,9 @@ CC = avr-gcc
 CFLAGS = -mmcu=$(MCU) -Wall -Wextra -Wuninitialized -std=c99 -DF_CPU=16000000UL -Os
 CFLAGS += -funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums
 CFLAGS += -ffunction-sections -fdata-sections
-CFLAGS += -mcall-prologues -mrelax 
-# CFLAGS += --combine -fwhole-program
-LDFLAGS = -Wl,-gc-sections -Wl,-Map=$(BIN)/charliev2.map
+CFLAGS += -mcall-prologues -mrelax -mstrict-X
+CFLAGS += -flto -fwhole-program
+LDFLAGS = -Wl,-gc-sections
 
 HEX_FLASH_FLAGS = -R .eeprom -R .fuse -R .lock -R .signature
 
