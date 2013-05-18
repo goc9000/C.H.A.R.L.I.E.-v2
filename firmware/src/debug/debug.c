@@ -39,10 +39,13 @@ void _debug_printf(PGM_P format, ...)
             c = pgm_read_byte(format);
             switch (c) {
                 case 'd':
-                    rs232_puts(itoa10(va_arg(args, int), buf));
+                    rs232_puts(itoa10(va_arg(args, int16_t), buf));
+                    continue;
+                case 'u':
+                    rs232_puts(ltoa10((int32_t)va_arg(args, uint16_t), buf));
                     continue;
                 case 'l':
-                    rs232_puts(ltoa10(va_arg(args, long), buf));
+                    rs232_puts(ltoa10(va_arg(args, int32_t), buf));
                     continue;
                 case 's':
                     rs232_puts(va_arg(args, const char*));
