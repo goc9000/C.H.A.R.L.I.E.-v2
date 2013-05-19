@@ -123,7 +123,6 @@
 
 // TCP
 #define CFG_NET_TCP_PORT_HTTP        80
-#define CFG_NET_TCP_MAX_PENDING      8
 #define CFG_NET_TCP_WINDOW_SIZE      1024
 #define CFG_NET_TCP_TIMEOUT_SEC      3
 #define CFG_NET_TCP_LAPSE_SEC        4

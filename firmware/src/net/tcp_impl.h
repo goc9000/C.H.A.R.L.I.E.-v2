@@ -16,7 +16,7 @@
 #include "packet_buf.h"
 #include "util/bool.h"
 
-void tcp_receive(PacketBuf *packet, ip_Header *ip_hdr);
+void tcp_receive(PacketBuf *packet, const ip_Header *ip_hdr);
 void tcp_send(PacketBuf *packet, tcp_Header *tcp_hdr, const ip_addr_t *dest_ip);
 
 bool tcp_port_is_open(uint16_t port);
