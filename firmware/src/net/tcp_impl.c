@@ -28,26 +28,22 @@
 #define SF_CLIENT_FIN   64
 
 typedef struct {
-    ip_addr_t ip;
-    uint16_t  port;
-    uint32_t  seq;
-} tcp_Peer;
-
-typedef struct {
-    tcp_Peer peer;
-} tcp_PendingConn;
+    ip_addr_t peer_ip;
+    uint16_t  peer_port;
+    uint32_t  peer_seq;
+    uint16_t  my_port;
+} tcp_ConnectionInfo;
 
 static struct {
     struct {
         uint8_t flags;
-        tcp_Peer peer;
+        tcp_ConnectionInfo conn;
         uint32_t my_seq;
-        uint16_t my_port;
         uint8_t failures;
         PacketBuf xmit_buffer;
     } current;
 
-    tcp_PendingConn pending[CFG_NET_TCP_MAX_PENDING];
+    tcp_ConnectionInfo pending[CFG_NET_TCP_MAX_PENDING];
     uint8_t num_pending;
     bool active;
 } tcp;
@@ -93,7 +89,7 @@ bool _tcp_pending_my_fin(void)
         !(tcp.current.flags & SF_MY_FIN_ACKED);
 }
 
-static void _tcp_accept_connection(tcp_Header* tcp_header, const tcp_Peer *peer)
+static void _tcp_accept_connection(tcp_Header* tcp_header, const tcp_ConnectionInfo *conn_info)
 {
     tcp_Header reply_header;
     PacketBuf packet;
@@ -107,8 +103,8 @@ static void _tcp_accept_connection(tcp_Header* tcp_header, const tcp_Peer *peer)
         // Already handling connection, try to accept as pending
         if (tcp.num_pending < CFG_NET_TCP_MAX_PENDING) {
             // Accept as pending
-            tcp.pending[tcp.num_pending].peer = *peer;
-            tcp.pending[tcp.num_pending].peer.seq++;
+            tcp.pending[tcp.num_pending] = *conn_info;
+            tcp.pending[tcp.num_pending].peer_seq++;
             tcp.num_pending++;
             reply_header.window_size = 0;
         } else {
@@ -118,17 +114,16 @@ static void _tcp_accept_connection(tcp_Header* tcp_header, const tcp_Peer *peer)
     } else {
         // Accept as current
         tcp.current.flags = SF_EXISTS;
-        tcp.current.peer = *peer;
-        tcp.current.peer.seq++;
+        tcp.current.conn = *conn_info;
+        tcp.current.conn.peer_seq++;
         tcp.current.my_seq = 2;
-        tcp.current.my_port = tcp_header->dest_port;
         tcp.current.failures = 0;
         _tcp_reset_xmit_buffer();
         _tcp_start_timeout();
     }
 
     pktbuf_create(&packet, STD_HEADROOM);
-    tcp_send(&packet, &reply_header, &(peer->ip));
+    tcp_send(&packet, &reply_header, &(conn_info->peer_ip));
 }
 
 static void _tcp_reply_on_connection(void)
@@ -136,10 +131,10 @@ static void _tcp_reply_on_connection(void)
     PacketBuf packet;
     tcp_Header header;
     
-    header.source_port = tcp.current.my_port;
-    header.dest_port = tcp.current.peer.port;
+    header.source_port = tcp.current.conn.my_port;
+    header.dest_port = tcp.current.conn.peer_port;
     header.seq_no = tcp.current.my_seq;
-    header.ack_no = tcp.current.peer.seq;
+    header.ack_no = tcp.current.conn.peer_seq;
     header.reserved = 0;
     header.ihl = 5;
     header.flags = TCP_FLAG_ACK;
@@ -157,7 +152,7 @@ static void _tcp_reply_on_connection(void)
     pktbuf_create(&packet, STD_HEADROOM);
     pktbuf_add_buf(&packet, &tcp.current.xmit_buffer);
 
-    tcp_send(&packet, &header, &tcp.current.peer.ip);
+    tcp_send(&packet, &header, &tcp.current.conn.peer_ip);
     
     _tcp_activity();
     _tcp_start_timeout();
@@ -193,12 +188,12 @@ static void _tcp_activate_next_connection(void)
     if (tcp.num_pending) {
         tcp.current.flags = SF_EXISTS;
         tcp.current.my_seq = 2;
-        tcp.current.peer = tcp.pending[0].peer;
+        tcp.current.conn = tcp.pending[0];
         tcp.current.failures = 0;
         _tcp_reset_xmit_buffer();
 
         memmove(tcp.pending, tcp.pending + 1,
-            sizeof(tcp_PendingConn) * (tcp.num_pending - 1));
+            sizeof(tcp_ConnectionInfo) * (tcp.num_pending - 1));
         tcp.num_pending--;
 
         _tcp_reply_on_connection();
@@ -227,7 +222,7 @@ static void _tcp_receive_for_current(tcp_Header* tcp_header,
         tcp.current.xmit_buffer.length + _tcp_pending_my_fin();
     bool has_payload = !!(payload->length);
     bool is_finish = !!(tcp_header->flags & TCP_FLAG_FIN);
-    bool has_correct_seq = (tcp_header->seq_no == tcp.current.peer.seq);
+    bool has_correct_seq = (tcp_header->seq_no == tcp.current.conn.peer_seq);
     bool has_correct_ack = (tcp_header->ack_no == expected_ack);
     bool should_respond = has_payload || is_finish || !has_correct_seq;
     
@@ -235,19 +230,19 @@ static void _tcp_receive_for_current(tcp_Header* tcp_header,
     _tcp_start_timeout();
     
     if (has_correct_seq) {
-        tcp.current.peer.seq += payload->length;
+        tcp.current.conn.peer_seq += payload->length;
         if (is_finish &&
             !(tcp.current.flags & SF_CLIENT_FIN)) {
             tcp.current.flags |= SF_CLIENT_FIN;
-            tcp.current.peer.seq++;
+            tcp.current.conn.peer_seq++;
         }
 
         if (has_payload) {
             if (!(tcp.current.flags & SF_RECEIVING)) {
-                tcp_start_request(tcp.current.my_port);
+                tcp_start_request(tcp.current.conn.my_port);
                 tcp.current.flags |= SF_RECEIVING;
             }
-            if (!tcp_receive_request(payload, tcp.current.my_port)) {
+            if (!tcp_receive_request(payload, tcp.current.conn.my_port)) {
                 tcp.current.flags |= SF_RESPONDING;
             }
         }
@@ -262,7 +257,7 @@ static void _tcp_receive_for_current(tcp_Header* tcp_header,
         }
 
         if ((tcp.current.flags & SF_RESPONDING) && !(tcp.current.flags & SF_MY_FIN)) {
-            if (!tcp_get_answer(&tcp.current.xmit_buffer, tcp.current.my_port)) {
+            if (!tcp_get_answer(&tcp.current.xmit_buffer, tcp.current.conn.my_port)) {
                 tcp.current.flags |= SF_MY_FIN;
             }
         }
@@ -273,7 +268,7 @@ static void _tcp_receive_for_current(tcp_Header* tcp_header,
     }
 
     if (tcp_header->flags & TCP_FLAG_RST) {
-        tcp.current.peer.seq++;
+        tcp.current.conn.peer_seq++;
         _tcp_reset_xmit_buffer();
         _tcp_reply_on_connection();
         _tcp_end_connection();
@@ -292,7 +287,8 @@ static void _tcp_receive_for_current(tcp_Header* tcp_header,
     }
 }
 
-static void _tcp_receive_for_pending(tcp_Header* tcp_header, const tcp_Peer *peer)
+static void _tcp_receive_for_pending(tcp_Header* tcp_header,
+    const tcp_ConnectionInfo *conn_info)
 {
     tcp_Header reply_header;
     PacketBuf packet;
@@ -304,10 +300,11 @@ static void _tcp_receive_for_pending(tcp_Header* tcp_header, const tcp_Peer *pee
     reply_header.window_size = 0;
     
     pktbuf_create(&packet, STD_HEADROOM);
-    tcp_send(&packet, &reply_header, &(peer->ip));
+    tcp_send(&packet, &reply_header, &(conn_info->peer_ip));
 }
 
-static void _tcp_receive_bogus_packet(tcp_Header* tcp_header, const tcp_Peer *peer)
+static void _tcp_receive_bogus_packet(tcp_Header* tcp_header,
+    const tcp_ConnectionInfo *conn_info)
 {
     tcp_Header reply_header;
     PacketBuf packet;
@@ -316,13 +313,16 @@ static void _tcp_receive_bogus_packet(tcp_Header* tcp_header, const tcp_Peer *pe
         tcp_header->seq_no, TCP_FLAG_RST | TCP_FLAG_ACK);
     
     pktbuf_create(&packet, STD_HEADROOM);
-    tcp_send(&packet, &reply_header, &(peer->ip));
+    tcp_send(&packet, &reply_header, &(conn_info->peer_ip));
 }
 
-static bool _tcp_peer_match(const tcp_Peer *peer1, const tcp_Peer *peer2)
+static bool _tcp_conn_match(const tcp_ConnectionInfo *conn1,
+    const tcp_ConnectionInfo *conn2)
 {
-    return ip_addr_equal(&peer1->ip, &peer2->ip) &&
-        (peer1->port == peer2->port);
+    return
+        ip_addr_equal(&conn1->peer_ip, &conn2->peer_ip) &&
+        (conn1->peer_port == conn2->peer_port) &&
+        (conn1->my_port == conn2->my_port);
 }
 
 /**
@@ -333,38 +333,40 @@ static bool _tcp_peer_match(const tcp_Peer *peer1, const tcp_Peer *peer2)
 void tcp_receive(PacketBuf *packet, ip_Header *ip_hdr)
 {
     tcp_Header header;
-    tcp_Peer peer;
+    tcp_ConnectionInfo conn_info;
     uint8_t i;
     
     tcp_get_header(packet, &header);
-    peer.ip   = ip_hdr->source_ip;
-    peer.port = header.source_port;
-    peer.seq  = header.seq_no;
+    conn_info.peer_ip   = ip_hdr->source_ip;
+    conn_info.peer_port = header.source_port;
+    conn_info.peer_seq  = header.seq_no;
+    conn_info.my_port   = header.dest_port;
     
     // Respond to connection requests
-    if (tcp_is_connection_begin_seg(&header) &&
-        tcp_port_is_open(header.dest_port)) {
-        _tcp_accept_connection(&header, &peer);
+    if (tcp_is_connection_begin_seg(&header)) {
+        if (tcp_port_is_open(header.dest_port)) {
+            _tcp_accept_connection(&header, &conn_info);
+        }
         return;
     }
     
     // Receive for current connection
     if ((tcp.current.flags & SF_EXISTS) &&
-        _tcp_peer_match(&peer, &tcp.current.peer)) {
+        _tcp_conn_match(&conn_info, &tcp.current.conn)) {
         _tcp_receive_for_current(&header, packet);
         return;
     }
     
     // Receive for pending connections
     for (i = 0; i < tcp.num_pending; i++) {
-        if (_tcp_peer_match(&peer, &(tcp.pending[i].peer))) {
-            _tcp_receive_for_pending(&header, &peer);
+        if (_tcp_conn_match(&conn_info, &(tcp.pending[i]))) {
+            _tcp_receive_for_pending(&header, &conn_info);
             return;
         }
     }
 
     // Reject bogus packet
-    _tcp_receive_bogus_packet(&header, &peer);
+    _tcp_receive_bogus_packet(&header, &conn_info);
 }
 
 /**
