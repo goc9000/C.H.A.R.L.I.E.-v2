@@ -1,10 +1,10 @@
 <!--{ log_get_query(&php.vars.query); }-->
 <!--{
-    if (php.params.from_date)
-        query_filter_after(&php.vars.query, php.params.from_date);
+    if (php.params.date0)
+        query_filter_after(&php.vars.query, php.params.date0);
     
-    if (php.params.to_date)
-        query_filter_before(&php.vars.query, php.params.to_date + TIME_SECONDS_PER_DAY - 1);
+    if (php.params.date1)
+        query_filter_before(&php.vars.query, php.params.date1 + TIME_SECONDS_PER_DAY - 1);
     
     if (php.params.reverse)
         query_reverse(&php.vars.query);
@@ -30,8 +30,8 @@
         page="<!--=php.params.page:uint16-->"
         pages="<!--=php.vars.pages:uint16-->"
         perPage="<!--=php.params.per_page:uint16-->"
-        from="<!--=php.params.from_date:datetime-->"
-        to="<!--=php.params.to_date:datetime-->"
+        from="<!--=php.params.date0:datetime-->"
+        to="<!--=php.params.date1:datetime-->"
         reverse="<!--=php.params.reverse:uint8-->"
         >
         <!--while query_get(&php.vars.query, &php.vars.entry.event)-->

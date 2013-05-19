@@ -170,12 +170,12 @@ static void * const PHP_VARS[] PROGMEM = {
     (void *)&cfg.time_server_ip,
     (void *)&cfg.timezone_delta,
     (void *)&php.params.command,
-    (void *)&php.params.from_date,
+    (void *)&php.params.date0,
+    (void *)&php.params.date1,
     (void *)&php.params.page,
     (void *)&php.params.per_page,
     (void *)&php.params.reverse,
     (void *)&php.params.tab,
-    (void *)&php.params.to_date,
     (void *)&php.render_date,
     (void *)&php.vars.entry.event,
     (void *)&php.vars.entry.event.code,
@@ -198,12 +198,12 @@ static void * const PHP_VARS[] PROGMEM = {
 #define PHP_VAR_CFG_TIME_SERVER_IP               4
 #define PHP_VAR_CFG_TIMEZONE_DELTA               5
 #define PHP_VAR_PARAMS_COMMAND                   6
-#define PHP_VAR_PARAMS_FROM_DATE                 7
-#define PHP_VAR_PARAMS_PAGE                      8
-#define PHP_VAR_PARAMS_PER_PAGE                  9
-#define PHP_VAR_PARAMS_REVERSE                   10
-#define PHP_VAR_PARAMS_TAB                       11
-#define PHP_VAR_PARAMS_TO_DATE                   12
+#define PHP_VAR_PARAMS_DATE0                     7
+#define PHP_VAR_PARAMS_DATE1                     8
+#define PHP_VAR_PARAMS_PAGE                      9
+#define PHP_VAR_PARAMS_PER_PAGE                  10
+#define PHP_VAR_PARAMS_REVERSE                   11
+#define PHP_VAR_PARAMS_TAB                       12
 #define PHP_VAR_RENDER_DATE                      13
 #define PHP_VAR_EVENT                            14
 #define PHP_VAR_EVENT_CODE                       15
@@ -243,11 +243,11 @@ static php_conv_fn_t const PHP_CONVERSIONS[] PROGMEM = {
 #define PHP_CONV_UINT8                           9
 
 static bool _php_routine_9(void) {
-    if (php.params.from_date)
-        query_filter_after(&php.vars.query, php.params.from_date);
+    if (php.params.date0)
+        query_filter_after(&php.vars.query, php.params.date0);
     
-    if (php.params.to_date)
-        query_filter_before(&php.vars.query, php.params.to_date + TIME_SECONDS_PER_DAY - 1);
+    if (php.params.date1)
+        query_filter_before(&php.vars.query, php.params.date1 + TIME_SECONDS_PER_DAY - 1);
     
     if (php.params.reverse)
         query_reverse(&php.vars.query); return TRUE;
@@ -674,9 +674,9 @@ static const uint8_t PHP_CODE[] PROGMEM = {
     PHP_UCODE_ATTR(PHP_ATTR_PERPAGE),
     PHP_UCODE_FORMAT(PHP_VAR_PARAMS_PER_PAGE,PHP_CONV_UINT16),
     PHP_UCODE_ATTR(PHP_ATTR_FROM),
-    PHP_UCODE_FORMAT(PHP_VAR_PARAMS_FROM_DATE,PHP_CONV_DATETIME),
+    PHP_UCODE_FORMAT(PHP_VAR_PARAMS_DATE0,PHP_CONV_DATETIME),
     PHP_UCODE_ATTR(PHP_ATTR_TO),
-    PHP_UCODE_FORMAT(PHP_VAR_PARAMS_TO_DATE,PHP_CONV_DATETIME),
+    PHP_UCODE_FORMAT(PHP_VAR_PARAMS_DATE1,PHP_CONV_DATETIME),
     PHP_UCODE_ATTR(PHP_ATTR_REVERSE),
     PHP_UCODE_FORMAT(PHP_VAR_PARAMS_REVERSE,PHP_CONV_UINT8),
     PHP_UCODE_RET

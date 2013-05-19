@@ -106,7 +106,7 @@
 			<option xmlns="http://www.w3.org/1999/xhtml">
 				<xsl:attribute name="value"><xsl:value-of select="$month"/></xsl:attribute>
 				<xsl:if test="number($month) = number($select)"><xsl:attribute name="selected"><xsl:value-of select="selected"/></xsl:attribute></xsl:if>
-				<xsl:value-of select="substring('   IanFebMarAprMaiIunIulAugSepOctNovDec',1+$month*3,3)"/>
+				<xsl:value-of select="substring('   JanFebMarAprMayJunJulAugSepOctNovDec',1+$month*3,3)"/>
 			</option>
 			<xsl:call-template name="monthOption">
 				<xsl:with-param name="month"><xsl:value-of select="$month + 1"/></xsl:with-param>
@@ -141,6 +141,22 @@
 	<xsl:template name="printTime">
 		<xsl:param name="datetime" />
 		<xsl:value-of select="substring($datetime,12,2)" />:<xsl:value-of select="substring($datetime,15,2)" />
+	</xsl:template>
+	<xsl:template name="dateInput">
+		<xsl:param name="index" />
+		<xsl:param name="select" />
+		<select xmlns="http://www.w3.org/1999/xhtml">
+			<xsl:attribute name="name"><xsl:value-of select="concat('d', string($index), 'd')"/></xsl:attribute>
+			<xsl:call-template name="dayOption"><xsl:with-param name="select" select="substring($select,9,2)"></xsl:with-param></xsl:call-template>
+		</select>
+		<select xmlns="http://www.w3.org/1999/xhtml">
+			<xsl:attribute name="name"><xsl:value-of select="concat('d', string($index), 'M')"/></xsl:attribute>
+			<xsl:call-template name="monthOption"><xsl:with-param name="select" select="substring($select,6,2)"></xsl:with-param></xsl:call-template>
+		</select>
+		<select xmlns="http://www.w3.org/1999/xhtml">
+			<xsl:attribute name="name"><xsl:value-of select="concat('d', string($index), 'y')"/></xsl:attribute>
+			<xsl:call-template name="yearOption"><xsl:with-param name="select" select="substring($select,1,4)"></xsl:with-param></xsl:call-template>
+		</select>
 	</xsl:template>
 	<xsl:template match="/page[@id='homePage']/current">
 		<div id="statusSection" class="section" xmlns="http://www.w3.org/1999/xhtml">
@@ -455,25 +471,9 @@
 				<option value="500"><xsl:if test="$perPage = 500"><xsl:attribute name="selected" value="selected"></xsl:attribute></xsl:if>500</option>
 			</select>
 			<label>Timespan:</label>
-			<select name="D">
-				<xsl:call-template name="dayOption"><xsl:with-param name="select" select="substring($from,9,2)"></xsl:with-param></xsl:call-template>
-			</select>
-			<select name="M">
-				<xsl:call-template name="monthOption"><xsl:with-param name="select" select="substring($from,6,2)"></xsl:with-param></xsl:call-template>
-			</select>
-			<select name="Y">
-				<xsl:call-template name="yearOption"><xsl:with-param name="select" select="substring($from,1,4)"></xsl:with-param></xsl:call-template>
-			</select>
+			<xsl:call-template name="dateInput"><xsl:with-param name="index">0</xsl:with-param><xsl:with-param name="select" select="$from"></xsl:with-param></xsl:call-template>
 			<label class="dash">-</label>
-			<select name="d">
-				<xsl:call-template name="dayOption"><xsl:with-param name="select" select="substring($to,9,2)"></xsl:with-param></xsl:call-template>
-			</select>
-			<select name="m">
-				<xsl:call-template name="monthOption"><xsl:with-param name="select" select="substring($to,6,2)"></xsl:with-param></xsl:call-template>
-			</select>
-			<select name="y">
-				<xsl:call-template name="yearOption"><xsl:with-param name="select" select="substring($to,1,4)"></xsl:with-param></xsl:call-template>
-			</select>
+			<xsl:call-template name="dateInput"><xsl:with-param name="index">1</xsl:with-param><xsl:with-param name="select" select="$to"></xsl:with-param></xsl:call-template>
 			<label>Order:</label>
 			<select name="r">
 				<option value="0"><xsl:if test="$reverse = 0"><xsl:attribute name="selected" value="selected"></xsl:attribute></xsl:if>Oldest first</option>
@@ -490,17 +490,17 @@
 				<xsl:value-of select="$perPage" />
 				<xsl:text>&amp;r=</xsl:text>
 				<xsl:value-of select="$reverse" />
-				<xsl:text>&amp;D=</xsl:text>
+				<xsl:text>&amp;d0d=</xsl:text>
 				<xsl:value-of select="number(substring($from,9,2))" />
-				<xsl:text>&amp;M=</xsl:text>
+				<xsl:text>&amp;d0M=</xsl:text>
 				<xsl:value-of select="number(substring($from,6,2))" />
-				<xsl:text>&amp;Y=</xsl:text>
+				<xsl:text>&amp;d0y=</xsl:text>
 				<xsl:value-of select="number(substring($from,1,4))" />
-				<xsl:text>&amp;d=</xsl:text>
+				<xsl:text>&amp;d1d=</xsl:text>
 				<xsl:value-of select="number(substring($to,9,2))" />
-				<xsl:text>&amp;m=</xsl:text>
+				<xsl:text>&amp;d1M=</xsl:text>
 				<xsl:value-of select="number(substring($to,6,2))" />
-				<xsl:text>&amp;y=</xsl:text>
+				<xsl:text>&amp;d1y=</xsl:text>
 				<xsl:value-of select="number(substring($to,1,4))" />
 				<xsl:text>&amp;p=</xsl:text>
 			</xsl:variable>

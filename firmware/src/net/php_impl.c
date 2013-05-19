@@ -73,8 +73,8 @@ static struct {
     struct {
         uint16_t page;
         uint16_t per_page;
-        time_t from_date;
-        time_t to_date;
+        time_t date0;
+        time_t date1;
         bool reverse;
         uint8_t tab;
         uint8_t command;
@@ -333,18 +333,48 @@ static void _php_read_params_phase1(PacketBuf *params)
 {
     char para_name[5];
     char para_val[20];
-    tm date;
-    char c;
+    tm dates[2];
+    tm *date_ptr;
+    char c, c2, c3;
     int32_t as_int;
-    uint16_t from_year = 0, to_year = 0;
-    uint8_t from_month = 0, from_day = 0, to_month = 0, to_day = 0;
+    
+    memset(dates, 0, 2 * sizeof(tm));
+    dates[0].tm_mday = 1;
+    dates[1].tm_mday = 1;
     
     while (http_parse_param(params, para_name, 5, para_val, 20)) {
         c = para_name[0];
+        c2 = para_name[1];
+        c3 = para_name[2];
         as_int = atol(para_val);
     
         if (c == 'C') {
             php.params.command = as_int;
+        } else if (c == 'd') {
+            if (((c2 == '0') || (c2 == '1')) && para_val[0] && (as_int > 0)) {
+                date_ptr = dates + (c2 - '0');
+                
+                switch (c3) {
+                    case 'y':
+                        date_ptr->tm_year = as_int - 1900;
+                        break;
+                    case 'M':
+                        date_ptr->tm_mon = as_int - 1;
+                        break;
+                    case 'd':
+                        date_ptr->tm_mday = as_int;
+                        break;
+                    case 'h':
+                        date_ptr->tm_hour = as_int;
+                        break;
+                    case 'm':
+                        date_ptr->tm_min = as_int;
+                        break;
+                    case 's':
+                        date_ptr->tm_sec = as_int;
+                        break;
+                }
+            }
         }
 
         if (php.page_id == PHP_PAGE_CONFIG_PHP) {
@@ -362,41 +392,15 @@ static void _php_read_params_phase1(PacketBuf *params)
                 case 'r':
                     php.params.reverse = as_int;
                     break;
-                case 'Y':
-                    from_year = as_int;
-                    break;
-                case 'M':
-                    from_month = as_int;
-                    break;
-                case 'D':
-                    from_day = as_int;
-                    break;
-                case 'y':
-                    to_year = as_int;
-                    break;
-                case 'm':
-                    to_month = as_int;
-                    break;
-                case 'd':
-                    to_day = as_int;
-                    break;
             }
         }
     }
     
-    if (from_year && from_month && from_day) {
-        memset(&date, 0, sizeof(tm));
-        date.tm_year = from_year - 1900;
-        date.tm_mon = from_month - 1;
-        date.tm_mday = from_day;
-        php.params.from_date = time_convert_to_raw(&date);
+    if (dates[0].tm_year) {
+        php.params.date0 = time_convert_to_raw(&dates[0]);
     }
-    if (to_year && to_month && to_day) {
-        memset(&date, 0, sizeof(tm));
-        date.tm_year = to_year - 1900;
-        date.tm_mon = to_month - 1;
-        date.tm_mday = to_day;
-        php.params.to_date = time_convert_to_raw(&date);
+    if (dates[1].tm_year) {
+        php.params.date1 = time_convert_to_raw(&dates[1]);
     }
 }
 
