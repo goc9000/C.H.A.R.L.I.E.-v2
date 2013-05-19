@@ -303,19 +303,6 @@ static void _tcp_receive_for_pending(tcp_Header* tcp_header,
     tcp_send(&packet, &reply_header, &(conn_info->peer_ip));
 }
 
-static void _tcp_receive_bogus_packet(tcp_Header* tcp_header,
-    const tcp_ConnectionInfo *conn_info)
-{
-    tcp_Header reply_header;
-    PacketBuf packet;
-
-    tcp_make_reply_header(&reply_header, tcp_header, tcp_header->ack_no,
-        tcp_header->seq_no, TCP_FLAG_RST | TCP_FLAG_ACK);
-    
-    pktbuf_create(&packet, STD_HEADROOM);
-    tcp_send(&packet, &reply_header, &(conn_info->peer_ip));
-}
-
 static bool _tcp_conn_match(const tcp_ConnectionInfo *conn1,
     const tcp_ConnectionInfo *conn2)
 {
@@ -364,9 +351,6 @@ void tcp_receive(PacketBuf *packet, ip_Header *ip_hdr)
             return;
         }
     }
-
-    // Reject bogus packet
-    _tcp_receive_bogus_packet(&header, &conn_info);
 }
 
 /**
