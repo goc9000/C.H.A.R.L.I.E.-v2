@@ -16,6 +16,7 @@
 #include "net/proto/eth.h"
 #include "net/packet_buf.h"
 #include "effectors/pump.h"
+#include "time/time.h"
 #include "util/hex.h"
 #include "util/misc.h"
 #include "debug.h"
@@ -74,6 +75,10 @@ void _debug_printf(PGM_P format, ...)
                             }
                         }
                     }
+                    continue;
+                case 't': // Datetime
+                    time_format_rfc3339(buf, va_arg(args, time_t));
+                    rs232_puts(buf);
                     continue;
                 case 'i': // IP address
                     ip_format(buf, va_arg(args, ip_addr_t*));
