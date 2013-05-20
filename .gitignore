@@ -1,2 +1,5 @@
-junk
+junk/
+firmware/bin/
 simulation/fsimage.bin
+.idea/
+*.geany
