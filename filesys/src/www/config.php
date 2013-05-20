@@ -25,6 +25,10 @@
                     cfg.plants[i].flags |= PLANT_CFG_FLAG_NOT_INSTALLED;
                 }
             }
+        } else if (php.params.tab == PHP_TAB_TIME) {
+            time_set_raw(php.params.date0);
+            php.render_date = php.params.date0;
+            rtc_set(php.params.date0);
         }
         cfg_save();
     }
@@ -47,6 +51,5 @@
         <recording interval="<!--=cfg.recording_interval:uint16-->" />
         <net mac="<!--=cfg.mac_addr:mac-->" />
         <alerts ip="<!--=cfg.alerts_server_ip:ip-->" port="<!--=cfg.alerts_port:uint16-->" />
-        <timesvr ip="<!--=cfg.time_server_ip:ip-->" tzdelta="<!--=cfg.timezone_delta:int16-->" />
     </config>
 </page>

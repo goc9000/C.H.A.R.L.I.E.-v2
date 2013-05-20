@@ -25,10 +25,10 @@ static char const PHP_PAGES[] PROGMEM =
 
 static uint16_t const PHP_PAGES_ENTRY[] PROGMEM = {
     (uint16_t)0,
-    (uint16_t)64,
-    (uint16_t)70,
-    (uint16_t)89,
-    (uint16_t)131
+    (uint16_t)56,
+    (uint16_t)62,
+    (uint16_t)81,
+    (uint16_t)123
 };
 
 static char const PHP_NODES[] PROGMEM =
@@ -46,8 +46,7 @@ static char const PHP_NODES[] PROGMEM =
     "plants\0"
     "recording\0"
     "records\0"
-    "row\0"
-    "timesvr\0";
+    "row\0";
 
 #define PHP_NODE_NONE                            0
 #define PHP_NODE_PI_XML                          1
@@ -64,7 +63,6 @@ static char const PHP_NODES[] PROGMEM =
 #define PHP_NODE_RECORDING                       12
 #define PHP_NODE_RECORDS                         13
 #define PHP_NODE_ROW                             14
-#define PHP_NODE_TIMESVR                         15
 
 static char const PHP_ATTRS[] PROGMEM =
     "\0"
@@ -92,7 +90,6 @@ static char const PHP_ATTRS[] PROGMEM =
     "tab\0"
     "to\0"
     "type\0"
-    "tzdelta\0"
     "version\0";
 
 #define PHP_ATTR_NONE                            0
@@ -120,8 +117,7 @@ static char const PHP_ATTRS[] PROGMEM =
 #define PHP_ATTR_TAB                             22
 #define PHP_ATTR_TO                              23
 #define PHP_ATTR_TYPE                            24
-#define PHP_ATTR_TZDELTA                         25
-#define PHP_ATTR_VERSION                         26
+#define PHP_ATTR_VERSION                         25
 
 static char const PHP_STRINGS[] PROGMEM =
     "\0"
@@ -167,8 +163,6 @@ static void * const PHP_VARS[] PROGMEM = {
     (void *)&cfg.alerts_server_ip,
     (void *)&cfg.mac_addr,
     (void *)&cfg.recording_interval,
-    (void *)&cfg.time_server_ip,
-    (void *)&cfg.timezone_delta,
     (void *)&php.params.command,
     (void *)&php.params.date0,
     (void *)&php.params.date1,
@@ -195,35 +189,32 @@ static void * const PHP_VARS[] PROGMEM = {
 #define PHP_VAR_CFG_ALERTS_SERVER_IP             1
 #define PHP_VAR_CFG_MAC_ADDR                     2
 #define PHP_VAR_CFG_RECORDING_INTERVAL           3
-#define PHP_VAR_CFG_TIME_SERVER_IP               4
-#define PHP_VAR_CFG_TIMEZONE_DELTA               5
-#define PHP_VAR_PARAMS_COMMAND                   6
-#define PHP_VAR_PARAMS_DATE0                     7
-#define PHP_VAR_PARAMS_DATE1                     8
-#define PHP_VAR_PARAMS_PAGE                      9
-#define PHP_VAR_PARAMS_PER_PAGE                  10
-#define PHP_VAR_PARAMS_REVERSE                   11
-#define PHP_VAR_PARAMS_TAB                       12
-#define PHP_VAR_RENDER_DATE                      13
-#define PHP_VAR_EVENT                            14
-#define PHP_VAR_EVENT_CODE                       15
-#define PHP_VAR_EVENT_DATA                       16
-#define PHP_VAR_EVENT_TIME                       17
-#define PHP_VAR_RECORD_TIME                      18
-#define PHP_VAR_PAGES                            19
-#define PHP_VAR_PLANT_CFG_FLAGS                  20
-#define PHP_VAR_PLANT_CFG_WATERING_START_THRESH  21
-#define PHP_VAR_PLANT_CFG_WATERING_STOP_THRESH   22
-#define PHP_VAR_PLANT_STATUS_HUMIDITY            23
-#define PHP_VAR_PLANT_STATUS_ILUMINATION         24
-#define PHP_VAR_PLANT_IDX                        25
+#define PHP_VAR_PARAMS_COMMAND                   4
+#define PHP_VAR_PARAMS_DATE0                     5
+#define PHP_VAR_PARAMS_DATE1                     6
+#define PHP_VAR_PARAMS_PAGE                      7
+#define PHP_VAR_PARAMS_PER_PAGE                  8
+#define PHP_VAR_PARAMS_REVERSE                   9
+#define PHP_VAR_PARAMS_TAB                       10
+#define PHP_VAR_RENDER_DATE                      11
+#define PHP_VAR_EVENT                            12
+#define PHP_VAR_EVENT_CODE                       13
+#define PHP_VAR_EVENT_DATA                       14
+#define PHP_VAR_EVENT_TIME                       15
+#define PHP_VAR_RECORD_TIME                      16
+#define PHP_VAR_PAGES                            17
+#define PHP_VAR_PLANT_CFG_FLAGS                  18
+#define PHP_VAR_PLANT_CFG_WATERING_START_THRESH  19
+#define PHP_VAR_PLANT_CFG_WATERING_STOP_THRESH   20
+#define PHP_VAR_PLANT_STATUS_HUMIDITY            21
+#define PHP_VAR_PLANT_STATUS_ILUMINATION         22
+#define PHP_VAR_PLANT_IDX                        23
 
 static php_conv_fn_t const PHP_CONVERSIONS[] PROGMEM = {
     (php_conv_fn_t)_php_format_datetime,
     (php_conv_fn_t)_php_format_datetime_csv,
     (php_conv_fn_t)_php_format_event_message,
     (php_conv_fn_t)_php_format_event_type,
-    (php_conv_fn_t)_php_format_int16,
     (php_conv_fn_t)_php_format_ip,
     (php_conv_fn_t)_php_format_mac,
     (php_conv_fn_t)_php_format_uint16,
@@ -235,12 +226,11 @@ static php_conv_fn_t const PHP_CONVERSIONS[] PROGMEM = {
 #define PHP_CONV_DATETIME_CSV                    1
 #define PHP_CONV_EVENT_MESSAGE                   2
 #define PHP_CONV_EVENT_TYPE                      3
-#define PHP_CONV_INT16                           4
-#define PHP_CONV_IP                              5
-#define PHP_CONV_MAC                             6
-#define PHP_CONV_UINT16                          7
-#define PHP_CONV_UINT32                          8
-#define PHP_CONV_UINT8                           9
+#define PHP_CONV_IP                              4
+#define PHP_CONV_MAC                             5
+#define PHP_CONV_UINT16                          6
+#define PHP_CONV_UINT32                          7
+#define PHP_CONV_UINT8                           8
 
 static bool _php_routine_9(void) {
     if (php.params.date0)
@@ -356,6 +346,10 @@ static bool _php_routine_0(void) {
                     cfg.plants[i].flags |= PLANT_CFG_FLAG_NOT_INSTALLED;
                 }
             }
+        } else if (php.params.tab == PHP_TAB_TIME) {
+            time_set_raw(php.params.date0);
+            php.render_date = php.params.date0;
+            rtc_set(php.params.date0);
         }
         cfg_save();
     } return TRUE;
@@ -411,34 +405,34 @@ static php_routine_fn_t const PHP_ROUTINES[] PROGMEM = {
 #define PHP_LABEL_CONFIG_PHP_IF_0_END            11
 #define PHP_LABEL_CONFIG_PHP_WHILE_1_START       17
 #define PHP_LABEL_CONFIG_PHP_WHILE_1_END         34
-#define PHP_LABEL_HEADER_PHP_ENTRY               64
-#define PHP_LABEL_HOME_PHP_ENTRY                 70
-#define PHP_LABEL_LOG_PHP_ENTRY                  89
-#define PHP_LABEL_LOG_PHP_WHILE_1_START          100
-#define PHP_LABEL_LOG_PHP_WHILE_1_END            118
-#define PHP_LABEL_LOG_PHP_IF_0_END               119
-#define PHP_LABEL_RECORDS_PHP_ENTRY              131
-#define PHP_LABEL_RECORDS_PHP_WHILE_1_START      141
-#define PHP_LABEL_RECORDS_PHP_WHILE_1_END        158
-#define PHP_LABEL_RECORDS_PHP_WHILE_2_START      160
-#define PHP_LABEL_RECORDS_PHP_WHILE_3_START      166
-#define PHP_LABEL_RECORDS_PHP_IF_4_END           183
-#define PHP_LABEL_RECORDS_PHP_IF_4_END2          185
-#define PHP_LABEL_RECORDS_PHP_WHILE_3_END        189
-#define PHP_LABEL_RECORDS_PHP_WHILE_2_END        194
-#define PHP_LABEL_RECORDS_PHP_IF_0_END           195
-#define PHP_LABEL_SUB_1                          206
-#define PHP_LABEL_HOME_PHP_WHILE_3_START         226
-#define PHP_LABEL_SUB_2                          226
-#define PHP_LABEL_HOME_PHP_WHILE_3_END           238
-#define PHP_LABEL_SUB_3                          241
-#define PHP_LABEL_HOME_PHP_WHILE_0_START         242
-#define PHP_LABEL_HOME_PHP_IF_1_END              256
-#define PHP_LABEL_HOME_PHP_WHILE_0_END           259
-#define PHP_LABEL_HOME_PHP_WHILE_2_START         261
-#define PHP_LABEL_SUB_4                          261
-#define PHP_LABEL_HOME_PHP_WHILE_2_END           278
-#define PHP_LABEL_SUB_5                          280
+#define PHP_LABEL_HEADER_PHP_ENTRY               56
+#define PHP_LABEL_HOME_PHP_ENTRY                 62
+#define PHP_LABEL_LOG_PHP_ENTRY                  81
+#define PHP_LABEL_LOG_PHP_WHILE_1_START          92
+#define PHP_LABEL_LOG_PHP_WHILE_1_END            110
+#define PHP_LABEL_LOG_PHP_IF_0_END               111
+#define PHP_LABEL_RECORDS_PHP_ENTRY              123
+#define PHP_LABEL_RECORDS_PHP_WHILE_1_START      133
+#define PHP_LABEL_RECORDS_PHP_WHILE_1_END        150
+#define PHP_LABEL_RECORDS_PHP_WHILE_2_START      152
+#define PHP_LABEL_RECORDS_PHP_WHILE_3_START      158
+#define PHP_LABEL_RECORDS_PHP_IF_4_END           175
+#define PHP_LABEL_RECORDS_PHP_IF_4_END2          177
+#define PHP_LABEL_RECORDS_PHP_WHILE_3_END        181
+#define PHP_LABEL_RECORDS_PHP_WHILE_2_END        186
+#define PHP_LABEL_RECORDS_PHP_IF_0_END           187
+#define PHP_LABEL_SUB_1                          198
+#define PHP_LABEL_HOME_PHP_WHILE_3_START         218
+#define PHP_LABEL_SUB_2                          218
+#define PHP_LABEL_HOME_PHP_WHILE_3_END           230
+#define PHP_LABEL_SUB_3                          233
+#define PHP_LABEL_HOME_PHP_WHILE_0_START         234
+#define PHP_LABEL_HOME_PHP_IF_1_END              248
+#define PHP_LABEL_HOME_PHP_WHILE_0_END           251
+#define PHP_LABEL_HOME_PHP_WHILE_2_START         253
+#define PHP_LABEL_SUB_4                          253
+#define PHP_LABEL_HOME_PHP_WHILE_2_END           270
+#define PHP_LABEL_SUB_5                          272
 
 static const uint8_t PHP_CODE[] PROGMEM = {
     // config.php_entry
@@ -483,12 +477,6 @@ static const uint8_t PHP_CODE[] PROGMEM = {
     PHP_UCODE_FORMAT(PHP_VAR_CFG_ALERTS_SERVER_IP,PHP_CONV_IP),
     PHP_UCODE_ATTR(PHP_ATTR_PORT),
     PHP_UCODE_FORMAT(PHP_VAR_CFG_ALERTS_PORT,PHP_CONV_UINT16),
-    PHP_UCODE_CLOSE_TAG,
-    PHP_UCODE_OPEN_TAG(PHP_NODE_TIMESVR),
-    PHP_UCODE_ATTR(PHP_ATTR_IP),
-    PHP_UCODE_FORMAT(PHP_VAR_CFG_TIME_SERVER_IP,PHP_CONV_IP),
-    PHP_UCODE_ATTR(PHP_ATTR_TZDELTA),
-    PHP_UCODE_FORMAT(PHP_VAR_CFG_TIMEZONE_DELTA,PHP_CONV_INT16),
     PHP_UCODE_CLOSE_TAG,
     PHP_UCODE_CLOSE_TAG,
     PHP_UCODE_CLOSE_TAG,

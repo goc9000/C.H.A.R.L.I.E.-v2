@@ -21,6 +21,35 @@
 					<script type="text/javascript">setTimeout(function() { window.location.href=window.location.href; }, 60000);</script>
 				</xsl:when>
 				<xsl:when test="@id='configPage'">
+					<xsl:if test="/page/config/@tab = 4">
+						<script type="text/javascript">
+							function setCombo(id, value)
+							{
+								var combo = document.getElementById(id);
+								
+								for (var i = 0; i &lt; combo.length; i++)
+									if (value == combo.options[i].value) {
+										combo.selectedIndex = i;
+										return;
+									}
+							}
+							
+							function saveTime()
+							{
+								var now = new Date();
+								
+								setCombo('d0y', now.getFullYear());
+								setCombo('d0M', now.getMonth() + 1);
+								setCombo('d0d', now.getDate());
+							
+								document.getElementById('d0h').value = (now.getHours() &lt; 10 ? '0' : '') + now.getHours();
+								document.getElementById('d0m').value = (now.getMinutes() &lt; 10 ? '0' : '') + now.getMinutes();
+								document.getElementById('d0s').value = (now.getSeconds() &lt; 10 ? '0' : '') + now.getSeconds();
+							
+								return true;
+							}
+						</script>
+					</xsl:if>
 					<xsl:if test="/page/config/@tab = 5">
 						<xsl:if test="/page/@executed = 1"><script type="text/javascript">top.location.href='reset.htm';</script></xsl:if>
 						<xsl:if test="/page/@executed = 2"><script type="text/javascript">top.location.href='shutdown.htm';</script></xsl:if>
@@ -147,16 +176,40 @@
 		<xsl:param name="select" />
 		<select xmlns="http://www.w3.org/1999/xhtml">
 			<xsl:attribute name="name"><xsl:value-of select="concat('d', string($index), 'd')"/></xsl:attribute>
+			<xsl:attribute name="id"><xsl:value-of select="concat('d', string($index), 'd')"/></xsl:attribute>
 			<xsl:call-template name="dayOption"><xsl:with-param name="select" select="substring($select,9,2)"></xsl:with-param></xsl:call-template>
 		</select>
 		<select xmlns="http://www.w3.org/1999/xhtml">
 			<xsl:attribute name="name"><xsl:value-of select="concat('d', string($index), 'M')"/></xsl:attribute>
+			<xsl:attribute name="id"><xsl:value-of select="concat('d', string($index), 'M')"/></xsl:attribute>
 			<xsl:call-template name="monthOption"><xsl:with-param name="select" select="substring($select,6,2)"></xsl:with-param></xsl:call-template>
 		</select>
 		<select xmlns="http://www.w3.org/1999/xhtml">
 			<xsl:attribute name="name"><xsl:value-of select="concat('d', string($index), 'y')"/></xsl:attribute>
+			<xsl:attribute name="id"><xsl:value-of select="concat('d', string($index), 'y')"/></xsl:attribute>
 			<xsl:call-template name="yearOption"><xsl:with-param name="select" select="substring($select,1,4)"></xsl:with-param></xsl:call-template>
 		</select>
+	</xsl:template>
+	<xsl:template name="timeInput">
+		<xsl:param name="index" />
+		<xsl:param name="select" />
+		<input type="text" size="2" maxlength="2" xmlns="http://www.w3.org/1999/xhtml">
+			<xsl:attribute name="name"><xsl:value-of select="concat('d', string($index), 'h')"/></xsl:attribute>
+			<xsl:attribute name="id"><xsl:value-of select="concat('d', string($index), 'h')"/></xsl:attribute>
+			<xsl:attribute name="value"><xsl:value-of select="substring($select,12,2)"/></xsl:attribute>
+		</input>
+		<xsl:text> : </xsl:text>
+		<input type="text" size="2" maxlength="2" xmlns="http://www.w3.org/1999/xhtml">
+			<xsl:attribute name="name"><xsl:value-of select="concat('d', string($index), 'm')"/></xsl:attribute>
+			<xsl:attribute name="id"><xsl:value-of select="concat('d', string($index), 'm')"/></xsl:attribute>
+			<xsl:attribute name="value"><xsl:value-of select="substring($select,15,2)"/></xsl:attribute>
+		</input>
+		<xsl:text> : </xsl:text>
+		<input type="text" size="2" maxlength="2" xmlns="http://www.w3.org/1999/xhtml">
+			<xsl:attribute name="name"><xsl:value-of select="concat('d', string($index), 's')"/></xsl:attribute>
+			<xsl:attribute name="id"><xsl:value-of select="concat('d', string($index), 's')"/></xsl:attribute>
+			<xsl:attribute name="value"><xsl:value-of select="substring($select,18,2)"/></xsl:attribute>
+		</input>
 	</xsl:template>
 	<xsl:template match="/page[@id='homePage']/current">
 		<div id="statusSection" class="section" xmlns="http://www.w3.org/1999/xhtml">
@@ -362,16 +415,12 @@
 					</xsl:when>
 					<xsl:when test="@tab=4">
 						<p class="config">
-							<label>Time server IP (SNTP):</label>
-							<input type="text" name="ti" size="15" maxlength="15">
-								<xsl:attribute name="value"><xsl:value-of select="timesvr/@ip"/></xsl:attribute>
-							</input>
+							<label>Current date</label>
+							<xsl:call-template name="dateInput"><xsl:with-param name="index">0</xsl:with-param><xsl:with-param name="select" select="/page/@datetime"></xsl:with-param></xsl:call-template>
 						</p>
 						<p class="config">
-							<label>Time zone:</label>
-							<input type="text" name="tz" size="3" maxlength="3">
-								<xsl:attribute name="value"><xsl:value-of select="timesvr/@tzdelta"/></xsl:attribute>
-							</input> (hrs vs. GMT)
+							<label>Current time</label>
+							<xsl:call-template name="timeInput"><xsl:with-param name="index">0</xsl:with-param><xsl:with-param name="select" select="/page/@datetime"></xsl:with-param></xsl:call-template>
 						</p>
 					</xsl:when>
 					<xsl:when test="@tab=5">
@@ -398,6 +447,9 @@
 				<xsl:if test="@tab!=5">
 				<div class="bottomButtons">
 					<button name="C" type="submit" value="1">Save changes</button>
+					<xsl:if test="@tab=4">
+						<button name="C" type="submit" value="1" onclick="return saveTime();">Get time from browser (needs JavaScript)</button>
+					</xsl:if>
 				</div>
 				</xsl:if>
 			</div>

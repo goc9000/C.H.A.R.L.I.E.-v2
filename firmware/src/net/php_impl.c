@@ -24,6 +24,7 @@
 #include "model/log.h"
 #include "model/records.h"
 #include "time/time.h"
+#include "time/dev/rtc_ds1307.h"
 #include "storage/filesys.h"
 #include "php_impl.h"
 #include "charlie.h"
@@ -456,14 +457,6 @@ static void _php_read_params_phase2(PacketBuf *params)
                     }
                     if (c2 == 'p') {
                         cfg.alerts_port = as_int;
-                    }
-                    break;
-                case 't':
-                    if ((c2 == 'i') && ip_parse(&ip, para_val)) {
-                        cfg.time_server_ip = ip;
-                    }
-                    if (c2 == 'z') {
-                        cfg.timezone_delta = as_int;
                     }
                     break;
             }
