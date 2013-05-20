@@ -133,7 +133,7 @@ void rtc_set(time_t time)
     regs[DS1307_REG_DOW]     = _dec2bcd(ti.tm_wday) + 1;
     regs[DS1307_REG_DATE]    = _dec2bcd(ti.tm_mday);
     regs[DS1307_REG_MONTH]   = _dec2bcd(ti.tm_mon) + 1;
-    regs[DS1307_REG_YEAR]    = _dec2bcd(ti.tm_year);
+    regs[DS1307_REG_YEAR]    = _dec2bcd(ti.tm_year % 100);
     
     _rtc_write_seq(DS1307_REG_SECONDS, regs, 7);
 }
