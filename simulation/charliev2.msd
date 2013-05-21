@@ -9,7 +9,8 @@
         {
             "id": "rtc",
             "type": "Ds1307",
-            "i2c_address": 104
+            "i2c_address": 104,
+            "nvram_file": "ds1307_nvram.bin"
         },
         {
             "id": "sd_card",
@@ -39,6 +40,14 @@
             "value": 0.0,
             "connect": {
                 "OUT": { "device": "mcu", "pin": "A0" }
+            }
+        },
+        {
+            "id": "mock_plant_ilum_sensor",
+            "type": "VoltageSource",
+            "value": 0.0,
+            "connect": {
+                "OUT": { "device": "mcu", "pin": "A1" }
             }
         },
         {
