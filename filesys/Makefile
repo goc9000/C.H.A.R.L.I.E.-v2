@@ -13,12 +13,6 @@ uploadfs: ./out/fsimage.bin
 	sudo sync && \
 	sudo eject $$(MMC_DRIVE); fi
 
-wwwtest: ./out/contents
-	@rm -rf /var/www/charlie
-	@mkdir -p /var/www/charlie
-	@cp -r ./out/contents/wwwroot/* /var/www/charlie
-	@cp ./src/www_simulation/* /var/www/charlie
-
 ./out/contents:
 	@cd ./src/graphics && make
 	@mkdir -p $@/data
@@ -36,4 +30,4 @@ clean:
 	@rm -rf ./out
 	@cd ./src/graphics && make clean
 
-.PHONY: wwwtest uploadfs clean
+.PHONY: uploadfs clean
