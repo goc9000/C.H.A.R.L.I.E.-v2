@@ -7,6 +7,8 @@ obj/16x16/%: %
 	@mkdir -p $(dir $@) && convert $^ -resize 16x16 $@
 obj/20x20/%: %
 	@mkdir -p $(dir $@) && convert $^ -resize 20x20 $@
+obj/24x24/%: %
+	@mkdir -p $(dir $@) && convert $^ -resize 24x24 $@
 obj/32x32/%: %
 	@mkdir -p $(dir $@) && convert $^ -resize 32x32 $@
 obj/40x40/%: %
@@ -23,7 +25,8 @@ obj/big_icons.png: $(addprefix obj/48x48/,$(READINGS)) \
 	@mkdir -p $(dir $@) && montage -background Transparent -tile 1x -geometry 128x128\>+0+0 $^ $@
 
 obj/small_icons.png: $(addprefix obj/20x20/,$(READINGS)) \
-	$(addprefix obj/16x16/src/events/,info.png warning.png error.png)
+	$(addprefix obj/16x16/src/events/,info.png warning.png error.png success.png) \
+	$(addprefix obj/24x24/src/events/,info.png warning.png error.png success.png)
 	@mkdir -p $(dir $@) && montage -background Transparent -tile 1x -geometry 32x32\>+0+0 $^ $@
 
 out/sprites.png: obj/big_icons.png obj/small_icons.png
