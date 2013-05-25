@@ -29,8 +29,8 @@ PC7   TOSC2      OUT  Pump decoder (ADR1)                         Y
 
 PD0   RXD        IN   RS232 interface                             N
 PD1   TXD        OUT  RS232 interface                             N
-PD2   INT0       IN   USB interface (D+)                          N
-PD3   INT1       IN   USB interface (D-)                          N
+PD2   INT0        -   Unused                                      Y
+PD3   INT1        -   Unused                                      Y
 PD4   OC1B        -   Unused                                      Y
 PD5   OC1A        -   Unused                                      Y
 PD6   ICP        IN   Debug key                                   Y

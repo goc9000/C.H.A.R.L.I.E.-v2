@@ -33,7 +33,7 @@ $(SRC)/net/php_code.h: $(wildcard ../filesys/src/www/*.php)
 checksize: $(BIN)/charliev2.elf
 	@avr-size -B $^ | tail -n+2 | (read text data bss etc; \
 	totFlash=$$((text+data)); totSram=$$((data+bss)); \
-	percFlash=$$((100*totFlash/(32768-2048))); \
+	percFlash=$$((100*totFlash/32768)); \
 	percSram=$$((100*totSram/2048)); \
 	echo "Flash: $$totFlash bytes ($$percFlash%)"; \
 	echo "SRAM : $$totSram bytes ($$percSram%)"; \
