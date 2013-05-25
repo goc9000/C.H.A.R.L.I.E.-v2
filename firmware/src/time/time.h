@@ -34,8 +34,10 @@ typedef struct {
 } tm;
 
 void time_init(void);
+void time_sync_to_realtime(void);
 void time_set_raw(time_t new_time);
 time_t time_get_raw(void);
+bool time_is_realtime(void);
 uint8_t time_get_centis(void);
 uint32_t time_get_uptime(void);
 PGM_P time_get_short_month_name(uint8_t month);

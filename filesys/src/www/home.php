@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <?xml-stylesheet type="text/xsl" href="main.xsl"?>
-<page datetime="<!--=php.render_date:datetime-->" id="homePage">
+<page datetime="<!--=php.render_date:datetime-->"
+    <!--if !time_is_realtime()-->datetimebad="y"<!--endif-->
+    id="homePage">
     <current>
         <!--{ plants_get_latest_record(&php.vars.entry.record); }-->
         <!--{ php.vars.plant_idx = 0; }-->

@@ -1,5 +1,6 @@
 <!--{
     uint8_t i;
+    bool had_lost_time;
     
     if (php.params.tab == PHP_TAB_RESET) {
         switch (php.params.command) {
@@ -26,9 +27,14 @@
                 }
             }
         } else if (php.params.tab == PHP_TAB_TIME) {
+            had_lost_time = !time_is_realtime();
             time_set_raw(php.params.date0);
             php.render_date = php.params.date0;
             rtc_set(php.params.date0);
+            
+            if (had_lost_time) {
+                log_make_entry(LOG_EVENT_TIME_LOST, 0);
+            }
         }
         cfg_save();
     }

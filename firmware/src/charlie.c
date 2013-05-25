@@ -84,7 +84,7 @@ static uint8_t initialize(void)
         return CHARLIE_STAT_RTC_ERROR;
     }
     time_init();
-    time_set_raw(rtc_read());
+    time_sync_to_realtime();
     
     sched_init();
     
@@ -96,7 +96,8 @@ static uint8_t initialize(void)
     }
     if (fsys_check_read_only()) {
         return CHARLIE_STAT_FSYS_READONLY;
-    }   
+    }
+    
     cfg_load();
     if (enc28j60_init(&cfg.mac_addr)) {
         return CHARLIE_STAT_NET_ERROR;
@@ -138,6 +139,21 @@ void shutdown(bool restart)
     charlie.restart = restart;
 }
 
+static void _warn_time_lost(uint32_t lit)
+{
+    if (time_is_realtime()) {
+        debug_led_off();
+        return;
+    }
+    
+    if (lit)
+        debug_led_on();
+    else
+        debug_led_off();
+    
+    sched_schedule_param(10, _warn_time_lost, !lit);
+}
+
 /**
  * main - Main program
  */
@@ -148,12 +164,13 @@ int main(void)
     if (stat != CHARLIE_STAT_OK) {
         debug_failure_mode(stat);
     }
-
-    log_make_entry(LOG_EVENT_ACTIVATED, 0);
-    if (rtc_time_lost()) {
-        log_make_entry(LOG_EVENT_TIME_LOST, 0);
+    
+    if (!time_is_realtime()) {
+        sched_schedule_param(10, _warn_time_lost, 1);
     }
 
+    log_make_entry(LOG_EVENT_ACTIVATED, 0);
+    
     while (TRUE) {
         if (debug_key_down()) {
             shutdown(FALSE);

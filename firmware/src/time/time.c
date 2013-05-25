@@ -12,6 +12,9 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
 
+#include "debug/debug.h"
+#include "time/dev/rtc_ds1307.h"
+
 #include "time.h"
 
 volatile struct {
@@ -225,6 +228,22 @@ void time_format_rfc3339(char *buffer, time_t datetime)
     _itoa2(buffer+11, time.tm_hour);
     _itoa2(buffer+14, time.tm_min);
     _itoa2(buffer+17, time.tm_sec);
+}
+
+/**
+ * time_sync_to_realtime - Synchronizes internal clock with real time.
+ */
+void time_sync_to_realtime(void)
+{
+    time_set_raw(rtc_read());
+}
+
+/**
+ * time_is_realtime - Checks whether the internal clock is synced with real time.
+ */
+bool time_is_realtime(void)
+{
+    return !rtc_time_lost();
 }
 
 /**

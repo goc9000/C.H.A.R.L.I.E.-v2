@@ -34,6 +34,10 @@ void log_make_entry(uint8_t code, uint32_t data)
     file_t file;
     LogEntry event;
     
+    if (!time_is_realtime()) {
+        return;
+    }
+    
     event.time = time_get_raw();
     event.code = code;
     event.data = data;

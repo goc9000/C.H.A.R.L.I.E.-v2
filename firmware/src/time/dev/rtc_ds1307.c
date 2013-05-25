@@ -14,7 +14,7 @@
 #include "dot_config.h"
 #include "rtc_ds1307.h"
 
-static bool rtc_was_time_lost;
+static bool rtc_time_is_lost;
 
 static uint8_t _bcd2dec(uint8_t bcd)
 {
@@ -93,6 +93,9 @@ time_t rtc_read(void)
     // is cached every I2C START, so it will never change during a read)
     _rtc_read_seq(DS1307_REG_SECONDS, regs, 7);
     
+    rtc_time_is_lost = ((regs[0] & _BV(DS1307_CH_BIT)) != 0);
+    regs[0] &= ~_BV(DS1307_CH_BIT);
+    
     time.tm_sec = _bcd2dec(regs[DS1307_REG_SECONDS]);
     time.tm_min = _bcd2dec(regs[DS1307_REG_MINUTES]);
     if (regs[DS1307_REG_HOURS] & _BV(DS1307_12HR_BIT)) {
@@ -136,15 +139,16 @@ void rtc_set(time_t time)
     regs[DS1307_REG_YEAR]    = _dec2bcd(ti.tm_year % 100);
     
     _rtc_write_seq(DS1307_REG_SECONDS, regs, 7);
+    
+    rtc_time_is_lost = FALSE;
 }
 
 /**
- * rtc_time_lost - Checks whether the RTC had lost its time settings
- *                 when we connected to it
+ * rtc_time_lost - Checks whether the RTC has lost its time settings
  */
 bool rtc_time_lost(void)
 {
-    return rtc_was_time_lost;
+    return rtc_time_is_lost;
 }
 
 /**
@@ -158,11 +162,8 @@ err_t rtc_init(void)
         return E_DEVICE;
     }
     
-    rtc_was_time_lost = FALSE;
-    if (stat & _BV(DS1307_CH_BIT)) {
-        _rtc_write(DS1307_REG_SECONDS, stat & ~_BV(DS1307_CH_BIT));
-        rtc_was_time_lost = TRUE;
-    }
+    rtc_time_is_lost = ((stat & _BV(DS1307_CH_BIT)) != 0);
+    
     _rtc_write(DS1307_REG_CONTROL, 0);
         
     return E_OK;

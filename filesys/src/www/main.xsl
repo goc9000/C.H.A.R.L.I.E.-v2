@@ -232,6 +232,9 @@
 			<div class="sectionTop" />
  			<div class="sectionContents">
 				<h2>Current Status</h2>
+				<xsl:if test="/page/@datetimebad">
+				<p class="error"><div class="icon_error"/>The Real-Time Clock's battery failed in the past. No recordings can be made until you set the date/time again.</p>
+				</xsl:if>
 				<table id="statusTable">
 					<tbody>
 						<tr>

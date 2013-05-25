@@ -25,10 +25,10 @@ static char const PHP_PAGES[] PROGMEM =
 
 static uint16_t const PHP_PAGES_ENTRY[] PROGMEM = {
     (uint16_t)0,
-    (uint16_t)56,
-    (uint16_t)62,
-    (uint16_t)81,
-    (uint16_t)123
+    (uint16_t)57,
+    (uint16_t)64,
+    (uint16_t)90,
+    (uint16_t)133
 };
 
 static char const PHP_NODES[] PROGMEM =
@@ -69,6 +69,7 @@ static char const PHP_ATTRS[] PROGMEM =
     "code\0"
     "data\0"
     "datetime\0"
+    "datetimebad\0"
     "encoding\0"
     "executed\0"
     "flags\0"
@@ -96,28 +97,29 @@ static char const PHP_ATTRS[] PROGMEM =
 #define PHP_ATTR_CODE                            1
 #define PHP_ATTR_DATA                            2
 #define PHP_ATTR_DATETIME                        3
-#define PHP_ATTR_ENCODING                        4
-#define PHP_ATTR_EXECUTED                        5
-#define PHP_ATTR_FLAGS                           6
-#define PHP_ATTR_FROM                            7
-#define PHP_ATTR_HREF                            8
-#define PHP_ATTR_HUMID                           9
-#define PHP_ATTR_ID                              10
-#define PHP_ATTR_ILUM                            11
-#define PHP_ATTR_INTERVAL                        12
-#define PHP_ATTR_IP                              13
-#define PHP_ATTR_MAC                             14
-#define PHP_ATTR_MAX                             15
-#define PHP_ATTR_MIN                             16
-#define PHP_ATTR_PAGE                            17
-#define PHP_ATTR_PAGES                           18
-#define PHP_ATTR_PERPAGE                         19
-#define PHP_ATTR_PORT                            20
-#define PHP_ATTR_REVERSE                         21
-#define PHP_ATTR_TAB                             22
-#define PHP_ATTR_TO                              23
-#define PHP_ATTR_TYPE                            24
-#define PHP_ATTR_VERSION                         25
+#define PHP_ATTR_DATETIMEBAD                     4
+#define PHP_ATTR_ENCODING                        5
+#define PHP_ATTR_EXECUTED                        6
+#define PHP_ATTR_FLAGS                           7
+#define PHP_ATTR_FROM                            8
+#define PHP_ATTR_HREF                            9
+#define PHP_ATTR_HUMID                           10
+#define PHP_ATTR_ID                              11
+#define PHP_ATTR_ILUM                            12
+#define PHP_ATTR_INTERVAL                        13
+#define PHP_ATTR_IP                              14
+#define PHP_ATTR_MAC                             15
+#define PHP_ATTR_MAX                             16
+#define PHP_ATTR_MIN                             17
+#define PHP_ATTR_PAGE                            18
+#define PHP_ATTR_PAGES                           19
+#define PHP_ATTR_PERPAGE                         20
+#define PHP_ATTR_PORT                            21
+#define PHP_ATTR_REVERSE                         22
+#define PHP_ATTR_TAB                             23
+#define PHP_ATTR_TO                              24
+#define PHP_ATTR_TYPE                            25
+#define PHP_ATTR_VERSION                         26
 
 static char const PHP_STRINGS[] PROGMEM =
     "\0"
@@ -137,7 +139,8 @@ static char const PHP_STRINGS[] PROGMEM =
     "logPage\0"
     "main.xsl\0"
     "recordsPage\0"
-    "text/xsl\0";
+    "text/xsl\0"
+    "y\0";
 
 #define PHP_STR_NONE                             0
 #define PHP_STR__                                1
@@ -157,6 +160,7 @@ static char const PHP_STRINGS[] PROGMEM =
 #define PHP_STR_MAIN_XSL                         15
 #define PHP_STR_RECORDSPAGE                      16
 #define PHP_STR_TEXT_XSL                         17
+#define PHP_STR_Y                                18
 
 static void * const PHP_VARS[] PROGMEM = {
     (void *)&cfg.alerts_port,
@@ -232,7 +236,7 @@ static php_conv_fn_t const PHP_CONVERSIONS[] PROGMEM = {
 #define PHP_CONV_UINT32                          7
 #define PHP_CONV_UINT8                           8
 
-static bool _php_routine_9(void) {
+static bool _php_routine_10(void) {
     if (php.params.date0)
         query_filter_after(&php.vars.query, php.params.date0);
     
@@ -243,19 +247,19 @@ static bool _php_routine_9(void) {
         query_reverse(&php.vars.query); return TRUE;
 }
 
-static bool _php_routine_6(void) {
+static bool _php_routine_7(void) {
     log_get_query(&php.vars.query); return TRUE;
 }
 
-static bool _php_routine_11(void) {
+static bool _php_routine_12(void) {
     php.content_type = HTTP_CONTENT_TYPE_TEXT_CSV; return TRUE;
 }
 
-static bool _php_routine_12(void) {
+static bool _php_routine_13(void) {
     php.download_filename = PSTR("log.csv"); return TRUE;
 }
 
-static bool _php_routine_16(void) {
+static bool _php_routine_17(void) {
     php.download_filename = PSTR("records.csv"); return TRUE;
 }
 
@@ -263,7 +267,7 @@ static bool _php_routine_4(void) {
     php.vars.plant.cfg = cfg.plants[php.vars.plant_idx++]; return TRUE;
 }
 
-static bool _php_routine_19(void) {
+static bool _php_routine_20(void) {
     php.vars.plant.status = php.vars.entry.record.plants[php.vars.plant_idx++]; return TRUE;
 }
 
@@ -271,31 +275,35 @@ static bool _php_routine_2(void) {
     php.vars.plant_idx = 0; return TRUE;
 }
 
-static bool _php_routine_5(void) {
+static bool _php_routine_6(void) {
     plants_get_latest_record(&php.vars.entry.record); return TRUE;
 }
 
-static bool _php_routine_14(void) {
+static bool _php_routine_15(void) {
     query_next(&php.vars.query); return TRUE;
 }
 
-static bool _php_routine_15(void) {
+static bool _php_routine_16(void) {
     query_paginate(&php.vars.query, php.params.per_page, &php.params.page, &php.vars.pages); return TRUE;
 }
 
-static bool _php_routine_7(void) {
+static bool _php_routine_8(void) {
     query_reverse(&php.vars.query); query_limit(&php.vars.query, 5); return TRUE;
 }
 
-static bool _php_routine_8(void) {
+static bool _php_routine_9(void) {
     rec_get_query(&php.vars.query); return TRUE;
 }
 
-static bool _php_routine_20(void) {
+static bool _php_routine_21(void) {
     return !(!(php.vars.plant.status.flags & PLANT_FLAGS_NOT_INSTALLED));
 }
 
-static bool _php_routine_10(void) {
+static bool _php_routine_5(void) {
+    return !(!time_is_realtime());
+}
+
+static bool _php_routine_11(void) {
     return !(php.params.command == PHP_CMD_EXPORT);
 }
 
@@ -307,20 +315,21 @@ static bool _php_routine_3(void) {
     return !(php.vars.plant_idx < CFG_MAX_PLANTS);
 }
 
-static bool _php_routine_17(void) {
+static bool _php_routine_18(void) {
     return !(php.vars.plant_idx++ < CFG_MAX_PLANTS);
 }
 
-static bool _php_routine_13(void) {
+static bool _php_routine_14(void) {
     return !(query_get(&php.vars.query, &php.vars.entry.event));
 }
 
-static bool _php_routine_18(void) {
+static bool _php_routine_19(void) {
     return !(query_get(&php.vars.query, &php.vars.entry.record));
 }
 
 static bool _php_routine_0(void) {
     uint8_t i;
+    bool had_lost_time;
     
     if (php.params.tab == PHP_TAB_RESET) {
         switch (php.params.command) {
@@ -347,97 +356,106 @@ static bool _php_routine_0(void) {
                 }
             }
         } else if (php.params.tab == PHP_TAB_TIME) {
+            had_lost_time = !time_is_realtime();
             time_set_raw(php.params.date0);
             php.render_date = php.params.date0;
             rtc_set(php.params.date0);
+            
+            if (had_lost_time) {
+                log_make_entry(LOG_EVENT_TIME_LOST, 0);
+            }
         }
         cfg_save();
     } return TRUE;
 }
 
 static php_routine_fn_t const PHP_ROUTINES[] PROGMEM = {
-    (php_routine_fn_t)_php_routine_9,
-    (php_routine_fn_t)_php_routine_6,
-    (php_routine_fn_t)_php_routine_11,
-    (php_routine_fn_t)_php_routine_12,
-    (php_routine_fn_t)_php_routine_16,
-    (php_routine_fn_t)_php_routine_4,
-    (php_routine_fn_t)_php_routine_19,
-    (php_routine_fn_t)_php_routine_2,
-    (php_routine_fn_t)_php_routine_5,
-    (php_routine_fn_t)_php_routine_14,
-    (php_routine_fn_t)_php_routine_15,
-    (php_routine_fn_t)_php_routine_7,
-    (php_routine_fn_t)_php_routine_8,
-    (php_routine_fn_t)_php_routine_20,
     (php_routine_fn_t)_php_routine_10,
+    (php_routine_fn_t)_php_routine_7,
+    (php_routine_fn_t)_php_routine_12,
+    (php_routine_fn_t)_php_routine_13,
+    (php_routine_fn_t)_php_routine_17,
+    (php_routine_fn_t)_php_routine_4,
+    (php_routine_fn_t)_php_routine_20,
+    (php_routine_fn_t)_php_routine_2,
+    (php_routine_fn_t)_php_routine_6,
+    (php_routine_fn_t)_php_routine_15,
+    (php_routine_fn_t)_php_routine_16,
+    (php_routine_fn_t)_php_routine_8,
+    (php_routine_fn_t)_php_routine_9,
+    (php_routine_fn_t)_php_routine_21,
+    (php_routine_fn_t)_php_routine_5,
+    (php_routine_fn_t)_php_routine_11,
     (php_routine_fn_t)_php_routine_1,
     (php_routine_fn_t)_php_routine_3,
-    (php_routine_fn_t)_php_routine_17,
-    (php_routine_fn_t)_php_routine_13,
     (php_routine_fn_t)_php_routine_18,
+    (php_routine_fn_t)_php_routine_14,
+    (php_routine_fn_t)_php_routine_19,
     (php_routine_fn_t)_php_routine_0
 };
 
-#define PHP_ROUTINE_9                            0
-#define PHP_ROUTINE_6                            1
-#define PHP_ROUTINE_11                           2
-#define PHP_ROUTINE_12                           3
-#define PHP_ROUTINE_16                           4
+#define PHP_ROUTINE_10                           0
+#define PHP_ROUTINE_7                            1
+#define PHP_ROUTINE_12                           2
+#define PHP_ROUTINE_13                           3
+#define PHP_ROUTINE_17                           4
 #define PHP_ROUTINE_4                            5
-#define PHP_ROUTINE_19                           6
+#define PHP_ROUTINE_20                           6
 #define PHP_ROUTINE_2                            7
-#define PHP_ROUTINE_5                            8
-#define PHP_ROUTINE_14                           9
-#define PHP_ROUTINE_15                           10
-#define PHP_ROUTINE_7                            11
-#define PHP_ROUTINE_8                            12
-#define PHP_ROUTINE_20                           13
-#define PHP_ROUTINE_10                           14
-#define PHP_ROUTINE_1                            15
-#define PHP_ROUTINE_3                            16
-#define PHP_ROUTINE_17                           17
-#define PHP_ROUTINE_13                           18
-#define PHP_ROUTINE_18                           19
-#define PHP_ROUTINE_0                            20
+#define PHP_ROUTINE_6                            8
+#define PHP_ROUTINE_15                           9
+#define PHP_ROUTINE_16                           10
+#define PHP_ROUTINE_8                            11
+#define PHP_ROUTINE_9                            12
+#define PHP_ROUTINE_21                           13
+#define PHP_ROUTINE_5                            14
+#define PHP_ROUTINE_11                           15
+#define PHP_ROUTINE_1                            16
+#define PHP_ROUTINE_3                            17
+#define PHP_ROUTINE_18                           18
+#define PHP_ROUTINE_14                           19
+#define PHP_ROUTINE_19                           20
+#define PHP_ROUTINE_0                            21
 
 #define PHP_LABEL_CONFIG_PHP_ENTRY               0
-#define PHP_LABEL_CONFIG_PHP_IF_0_END            11
-#define PHP_LABEL_CONFIG_PHP_WHILE_1_START       17
-#define PHP_LABEL_CONFIG_PHP_WHILE_1_END         34
-#define PHP_LABEL_HEADER_PHP_ENTRY               56
-#define PHP_LABEL_HOME_PHP_ENTRY                 62
-#define PHP_LABEL_LOG_PHP_ENTRY                  81
-#define PHP_LABEL_LOG_PHP_WHILE_1_START          92
-#define PHP_LABEL_LOG_PHP_WHILE_1_END            110
-#define PHP_LABEL_LOG_PHP_IF_0_END               111
-#define PHP_LABEL_RECORDS_PHP_ENTRY              123
-#define PHP_LABEL_RECORDS_PHP_WHILE_1_START      133
-#define PHP_LABEL_RECORDS_PHP_WHILE_1_END        150
-#define PHP_LABEL_RECORDS_PHP_WHILE_2_START      152
-#define PHP_LABEL_RECORDS_PHP_WHILE_3_START      158
-#define PHP_LABEL_RECORDS_PHP_IF_4_END           175
-#define PHP_LABEL_RECORDS_PHP_IF_4_END2          177
-#define PHP_LABEL_RECORDS_PHP_WHILE_3_END        181
-#define PHP_LABEL_RECORDS_PHP_WHILE_2_END        186
-#define PHP_LABEL_RECORDS_PHP_IF_0_END           187
-#define PHP_LABEL_SUB_1                          198
-#define PHP_LABEL_HOME_PHP_WHILE_3_START         218
-#define PHP_LABEL_SUB_2                          218
-#define PHP_LABEL_HOME_PHP_WHILE_3_END           230
-#define PHP_LABEL_SUB_3                          233
-#define PHP_LABEL_HOME_PHP_WHILE_0_START         234
-#define PHP_LABEL_HOME_PHP_IF_1_END              248
-#define PHP_LABEL_HOME_PHP_WHILE_0_END           251
-#define PHP_LABEL_HOME_PHP_WHILE_2_START         253
-#define PHP_LABEL_SUB_4                          253
-#define PHP_LABEL_HOME_PHP_WHILE_2_END           270
-#define PHP_LABEL_SUB_5                          272
+#define PHP_LABEL_CONFIG_PHP_IF_0_END            12
+#define PHP_LABEL_CONFIG_PHP_WHILE_1_START       18
+#define PHP_LABEL_CONFIG_PHP_WHILE_1_END         35
+#define PHP_LABEL_HEADER_PHP_ENTRY               57
+#define PHP_LABEL_HOME_PHP_ENTRY                 64
+#define PHP_LABEL_HOME_PHP_IF_0_END              72
+#define PHP_LABEL_LOG_PHP_ENTRY                  90
+#define PHP_LABEL_LOG_PHP_WHILE_1_START          101
+#define PHP_LABEL_LOG_PHP_WHILE_1_END            119
+#define PHP_LABEL_LOG_PHP_IF_0_END               120
+#define PHP_LABEL_RECORDS_PHP_ENTRY              133
+#define PHP_LABEL_RECORDS_PHP_WHILE_1_START      143
+#define PHP_LABEL_RECORDS_PHP_WHILE_1_END        160
+#define PHP_LABEL_RECORDS_PHP_WHILE_2_START      162
+#define PHP_LABEL_RECORDS_PHP_WHILE_3_START      168
+#define PHP_LABEL_RECORDS_PHP_IF_4_END           185
+#define PHP_LABEL_RECORDS_PHP_IF_4_END2          187
+#define PHP_LABEL_RECORDS_PHP_WHILE_3_END        191
+#define PHP_LABEL_RECORDS_PHP_WHILE_2_END        196
+#define PHP_LABEL_RECORDS_PHP_IF_0_END           197
+#define PHP_LABEL_SUB_1                          209
+#define PHP_LABEL_SUB_2                          228
+#define PHP_LABEL_HOME_PHP_WHILE_4_START         228
+#define PHP_LABEL_HOME_PHP_WHILE_4_END           240
+#define PHP_LABEL_SUB_3                          243
+#define PHP_LABEL_HOME_PHP_WHILE_1_START         244
+#define PHP_LABEL_HOME_PHP_IF_2_END              258
+#define PHP_LABEL_HOME_PHP_WHILE_1_END           261
+#define PHP_LABEL_HOME_PHP_WHILE_3_START         263
+#define PHP_LABEL_SUB_4                          263
+#define PHP_LABEL_HOME_PHP_WHILE_3_END           280
+#define PHP_LABEL_SUB_5                          282
 
 static const uint8_t PHP_CODE[] PROGMEM = {
     // config.php_entry
     PHP_UCODE_ROUTINE(PHP_ROUTINE_0),
     PHP_UCODE_CALL(PHP_LABEL_SUB_1),
+    PHP_UCODE_ATTR(PHP_ATTR_ID),
     PHP_UCODE_TEXT(PHP_STR_CONFIGPAGE),
     PHP_UCODE_ROUTINE(PHP_ROUTINE_1),
     PHP_UCODE_JUMP(PHP_LABEL_CONFIG_PHP_IF_0_END),
@@ -483,35 +501,42 @@ static const uint8_t PHP_CODE[] PROGMEM = {
     PHP_UCODE_END,
     // header.php_entry
     PHP_UCODE_CALL(PHP_LABEL_SUB_1),
+    PHP_UCODE_ATTR(PHP_ATTR_ID),
     PHP_UCODE_TEXT(PHP_STR_HEADERPAGE),
     PHP_UCODE_CLOSE_TAG,
     PHP_UCODE_END,
     // home.php_entry
     PHP_UCODE_CALL(PHP_LABEL_SUB_1),
+    PHP_UCODE_ROUTINE(PHP_ROUTINE_5),
+    PHP_UCODE_JUMP(PHP_LABEL_HOME_PHP_IF_0_END),
+    PHP_UCODE_ATTR(PHP_ATTR_DATETIMEBAD),
+    PHP_UCODE_TEXT(PHP_STR_Y),
+    // home.php_if_0_end
+    PHP_UCODE_ATTR(PHP_ATTR_ID),
     PHP_UCODE_TEXT(PHP_STR_HOMEPAGE),
     PHP_UCODE_OPEN_TAG(PHP_NODE_CURRENT),
-    PHP_UCODE_ROUTINE(PHP_ROUTINE_5),
+    PHP_UCODE_ROUTINE(PHP_ROUTINE_6),
     PHP_UCODE_CALL(PHP_LABEL_SUB_3),
     PHP_UCODE_OPEN_TAG(PHP_NODE_LOG),
-    PHP_UCODE_ROUTINE(PHP_ROUTINE_6),
     PHP_UCODE_ROUTINE(PHP_ROUTINE_7),
+    PHP_UCODE_ROUTINE(PHP_ROUTINE_8),
     PHP_UCODE_CALL(PHP_LABEL_SUB_4),
     PHP_UCODE_OPEN_TAG(PHP_NODE_RECORDS),
+    PHP_UCODE_ROUTINE(PHP_ROUTINE_9),
     PHP_UCODE_ROUTINE(PHP_ROUTINE_8),
-    PHP_UCODE_ROUTINE(PHP_ROUTINE_7),
     PHP_UCODE_CALL(PHP_LABEL_SUB_2),
     PHP_UCODE_END,
     // log.php_entry
-    PHP_UCODE_ROUTINE(PHP_ROUTINE_6),
-    PHP_UCODE_ROUTINE(PHP_ROUTINE_9),
+    PHP_UCODE_ROUTINE(PHP_ROUTINE_7),
     PHP_UCODE_ROUTINE(PHP_ROUTINE_10),
-    PHP_UCODE_JUMP(PHP_LABEL_LOG_PHP_IF_0_END),
     PHP_UCODE_ROUTINE(PHP_ROUTINE_11),
+    PHP_UCODE_JUMP(PHP_LABEL_LOG_PHP_IF_0_END),
     PHP_UCODE_ROUTINE(PHP_ROUTINE_12),
+    PHP_UCODE_ROUTINE(PHP_ROUTINE_13),
     PHP_UCODE_TEXT(PHP_STR_DATE_TYPE_MESSAG),
     PHP_UCODE_TEXT(PHP_STR__),
     // log.php_while_1_start
-    PHP_UCODE_ROUTINE(PHP_ROUTINE_13),
+    PHP_UCODE_ROUTINE(PHP_ROUTINE_14),
     PHP_UCODE_JUMP(PHP_LABEL_LOG_PHP_WHILE_1_END),
     PHP_UCODE_FORMAT(PHP_VAR_EVENT_TIME,PHP_CONV_DATETIME_CSV),
     PHP_UCODE_TEXT(PHP_STR__2),
@@ -519,13 +544,14 @@ static const uint8_t PHP_CODE[] PROGMEM = {
     PHP_UCODE_TEXT(PHP_STR__2),
     PHP_UCODE_FORMAT(PHP_VAR_EVENT,PHP_CONV_EVENT_MESSAGE),
     PHP_UCODE_TEXT(PHP_STR__),
-    PHP_UCODE_ROUTINE(PHP_ROUTINE_14),
+    PHP_UCODE_ROUTINE(PHP_ROUTINE_15),
     PHP_UCODE_JUMP(PHP_LABEL_LOG_PHP_WHILE_1_START),
     // log.php_while_1_end
     PHP_UCODE_END,
     // log.php_if_0_end
-    PHP_UCODE_ROUTINE(PHP_ROUTINE_15),
+    PHP_UCODE_ROUTINE(PHP_ROUTINE_16),
     PHP_UCODE_CALL(PHP_LABEL_SUB_1),
+    PHP_UCODE_ATTR(PHP_ATTR_ID),
     PHP_UCODE_TEXT(PHP_STR_LOGPAGE),
     PHP_UCODE_OPEN_TAG(PHP_NODE_LOG),
     PHP_UCODE_CALL(PHP_LABEL_SUB_5),
@@ -533,16 +559,16 @@ static const uint8_t PHP_CODE[] PROGMEM = {
     PHP_UCODE_CLOSE_TAG,
     PHP_UCODE_END,
     // records.php_entry
-    PHP_UCODE_ROUTINE(PHP_ROUTINE_8),
     PHP_UCODE_ROUTINE(PHP_ROUTINE_9),
     PHP_UCODE_ROUTINE(PHP_ROUTINE_10),
-    PHP_UCODE_JUMP(PHP_LABEL_RECORDS_PHP_IF_0_END),
     PHP_UCODE_ROUTINE(PHP_ROUTINE_11),
-    PHP_UCODE_ROUTINE(PHP_ROUTINE_16),
+    PHP_UCODE_JUMP(PHP_LABEL_RECORDS_PHP_IF_0_END),
+    PHP_UCODE_ROUTINE(PHP_ROUTINE_12),
+    PHP_UCODE_ROUTINE(PHP_ROUTINE_17),
     PHP_UCODE_TEXT(PHP_STR_DATE),
     PHP_UCODE_ROUTINE(PHP_ROUTINE_2),
     // records.php_while_1_start
-    PHP_UCODE_ROUTINE(PHP_ROUTINE_17),
+    PHP_UCODE_ROUTINE(PHP_ROUTINE_18),
     PHP_UCODE_JUMP(PHP_LABEL_RECORDS_PHP_WHILE_1_END),
     PHP_UCODE_TEXT(PHP_STR__HUMID_),
     PHP_UCODE_FORMAT(PHP_VAR_PLANT_IDX,PHP_CONV_UINT8),
@@ -554,15 +580,15 @@ static const uint8_t PHP_CODE[] PROGMEM = {
     // records.php_while_1_end
     PHP_UCODE_TEXT(PHP_STR__),
     // records.php_while_2_start
-    PHP_UCODE_ROUTINE(PHP_ROUTINE_18),
+    PHP_UCODE_ROUTINE(PHP_ROUTINE_19),
     PHP_UCODE_JUMP(PHP_LABEL_RECORDS_PHP_WHILE_2_END),
     PHP_UCODE_FORMAT(PHP_VAR_EVENT_TIME,PHP_CONV_DATETIME_CSV),
     PHP_UCODE_ROUTINE(PHP_ROUTINE_2),
     // records.php_while_3_start
     PHP_UCODE_ROUTINE(PHP_ROUTINE_3),
     PHP_UCODE_JUMP(PHP_LABEL_RECORDS_PHP_WHILE_3_END),
-    PHP_UCODE_ROUTINE(PHP_ROUTINE_19),
     PHP_UCODE_ROUTINE(PHP_ROUTINE_20),
+    PHP_UCODE_ROUTINE(PHP_ROUTINE_21),
     PHP_UCODE_JUMP(PHP_LABEL_RECORDS_PHP_IF_4_END),
     PHP_UCODE_TEXT(PHP_STR__2),
     PHP_UCODE_FORMAT(PHP_VAR_PLANT_STATUS_HUMIDITY,PHP_CONV_UINT8),
@@ -576,13 +602,14 @@ static const uint8_t PHP_CODE[] PROGMEM = {
     PHP_UCODE_JUMP(PHP_LABEL_RECORDS_PHP_WHILE_3_START),
     // records.php_while_3_end
     PHP_UCODE_TEXT(PHP_STR__),
-    PHP_UCODE_ROUTINE(PHP_ROUTINE_14),
+    PHP_UCODE_ROUTINE(PHP_ROUTINE_15),
     PHP_UCODE_JUMP(PHP_LABEL_RECORDS_PHP_WHILE_2_START),
     // records.php_while_2_end
     PHP_UCODE_END,
     // records.php_if_0_end
-    PHP_UCODE_ROUTINE(PHP_ROUTINE_15),
+    PHP_UCODE_ROUTINE(PHP_ROUTINE_16),
     PHP_UCODE_CALL(PHP_LABEL_SUB_1),
+    PHP_UCODE_ATTR(PHP_ATTR_ID),
     PHP_UCODE_TEXT(PHP_STR_RECORDSPAGE),
     PHP_UCODE_OPEN_TAG(PHP_NODE_RECORDS),
     PHP_UCODE_CALL(PHP_LABEL_SUB_5),
@@ -602,45 +629,44 @@ static const uint8_t PHP_CODE[] PROGMEM = {
     PHP_UCODE_OPEN_TAG(PHP_NODE_PAGE),
     PHP_UCODE_ATTR(PHP_ATTR_DATETIME),
     PHP_UCODE_FORMAT(PHP_VAR_RENDER_DATE,PHP_CONV_DATETIME),
-    PHP_UCODE_ATTR(PHP_ATTR_ID),
     PHP_UCODE_RET,
     // sub_2
-    // home.php_while_3_start
-    PHP_UCODE_ROUTINE(PHP_ROUTINE_18),
-    PHP_UCODE_JUMP(PHP_LABEL_HOME_PHP_WHILE_3_END),
+    // home.php_while_4_start
+    PHP_UCODE_ROUTINE(PHP_ROUTINE_19),
+    PHP_UCODE_JUMP(PHP_LABEL_HOME_PHP_WHILE_4_END),
     PHP_UCODE_OPEN_TAG(PHP_NODE_ROW),
     PHP_UCODE_ATTR(PHP_ATTR_DATETIME),
     PHP_UCODE_FORMAT(PHP_VAR_RECORD_TIME,PHP_CONV_DATETIME),
     PHP_UCODE_CALL(PHP_LABEL_SUB_3),
-    PHP_UCODE_ROUTINE(PHP_ROUTINE_14),
-    PHP_UCODE_JUMP(PHP_LABEL_HOME_PHP_WHILE_3_START),
-    // home.php_while_3_end
+    PHP_UCODE_ROUTINE(PHP_ROUTINE_15),
+    PHP_UCODE_JUMP(PHP_LABEL_HOME_PHP_WHILE_4_START),
+    // home.php_while_4_end
     PHP_UCODE_CLOSE_TAG,
     PHP_UCODE_CLOSE_TAG,
     PHP_UCODE_RET,
     // sub_3
     PHP_UCODE_ROUTINE(PHP_ROUTINE_2),
-    // home.php_while_0_start
+    // home.php_while_1_start
     PHP_UCODE_ROUTINE(PHP_ROUTINE_3),
-    PHP_UCODE_JUMP(PHP_LABEL_HOME_PHP_WHILE_0_END),
-    PHP_UCODE_ROUTINE(PHP_ROUTINE_19),
-    PHP_UCODE_OPEN_TAG(PHP_NODE_PLANT),
+    PHP_UCODE_JUMP(PHP_LABEL_HOME_PHP_WHILE_1_END),
     PHP_UCODE_ROUTINE(PHP_ROUTINE_20),
-    PHP_UCODE_JUMP(PHP_LABEL_HOME_PHP_IF_1_END),
+    PHP_UCODE_OPEN_TAG(PHP_NODE_PLANT),
+    PHP_UCODE_ROUTINE(PHP_ROUTINE_21),
+    PHP_UCODE_JUMP(PHP_LABEL_HOME_PHP_IF_2_END),
     PHP_UCODE_ATTR(PHP_ATTR_HUMID),
     PHP_UCODE_FORMAT(PHP_VAR_PLANT_STATUS_HUMIDITY,PHP_CONV_UINT8),
     PHP_UCODE_ATTR(PHP_ATTR_ILUM),
     PHP_UCODE_FORMAT(PHP_VAR_PLANT_STATUS_ILUMINATION,PHP_CONV_UINT8),
-    // home.php_if_1_end
+    // home.php_if_2_end
     PHP_UCODE_CLOSE_TAG,
-    PHP_UCODE_JUMP(PHP_LABEL_HOME_PHP_WHILE_0_START),
-    // home.php_while_0_end
+    PHP_UCODE_JUMP(PHP_LABEL_HOME_PHP_WHILE_1_START),
+    // home.php_while_1_end
     PHP_UCODE_CLOSE_TAG,
     PHP_UCODE_RET,
     // sub_4
-    // home.php_while_2_start
-    PHP_UCODE_ROUTINE(PHP_ROUTINE_13),
-    PHP_UCODE_JUMP(PHP_LABEL_HOME_PHP_WHILE_2_END),
+    // home.php_while_3_start
+    PHP_UCODE_ROUTINE(PHP_ROUTINE_14),
+    PHP_UCODE_JUMP(PHP_LABEL_HOME_PHP_WHILE_3_END),
     PHP_UCODE_OPEN_TAG(PHP_NODE_EVENT),
     PHP_UCODE_ATTR(PHP_ATTR_DATETIME),
     PHP_UCODE_FORMAT(PHP_VAR_EVENT_TIME,PHP_CONV_DATETIME),
@@ -649,9 +675,9 @@ static const uint8_t PHP_CODE[] PROGMEM = {
     PHP_UCODE_ATTR(PHP_ATTR_DATA),
     PHP_UCODE_FORMAT(PHP_VAR_EVENT_DATA,PHP_CONV_UINT32),
     PHP_UCODE_CLOSE_TAG,
-    PHP_UCODE_ROUTINE(PHP_ROUTINE_14),
-    PHP_UCODE_JUMP(PHP_LABEL_HOME_PHP_WHILE_2_START),
-    // home.php_while_2_end
+    PHP_UCODE_ROUTINE(PHP_ROUTINE_15),
+    PHP_UCODE_JUMP(PHP_LABEL_HOME_PHP_WHILE_3_START),
+    // home.php_while_3_end
     PHP_UCODE_CLOSE_TAG,
     PHP_UCODE_RET,
     // sub_5
