@@ -440,8 +440,8 @@
 							<button name="C" type="submit" value="4" onclick="return confirm('This cannot be undone! Are you sure?');">Purge records</button>
 							<span>Deletes all plant-related records.</span>
 						</p>
-						<xsl:if test="/page/@executed = 3"><p class="done">All event log entries have been deleted.</p></xsl:if>
-						<xsl:if test="/page/@executed = 4"><p class="done">All plant records have been deleted.</p></xsl:if>
+						<xsl:if test="/page/@executed = 3"><p class="done"><div class="icon_ok"/>All event log entries have been deleted.</p></xsl:if>
+						<xsl:if test="/page/@executed = 4"><p class="done"><div class="icon_ok"/>All plant records have been deleted.</p></xsl:if>
 					</xsl:when>
 				</xsl:choose>
 				<xsl:if test="@tab!=5">

@@ -475,18 +475,88 @@ div.bottomButtons button {
 	font-weight: bold;
 }
 
-p.done {
+div.icon_ok {
 	height: 24px;
+	width: 24px;
+	float: left;
+	margin-right: 0.5pc;
 	background-image: url("img/sprites.png");
 	background-repeat: no-repeat;
-	background-position: 2px -1990px;
+	background-position: -4px -2212px;
+}
+
+div.icon_warning {
+	height: 24px;
+	width: 24px;
+	float: left;
+	margin-right: 0.5pc;
+	background-image: url("img/sprites.png");
+	background-repeat: no-repeat;
+	background-position: -4px -2148px;
+}
+
+div.icon_error {
+	height: 24px;
+	width: 24px;
+	float: left;
+	margin-right: 0.5pc;
+	background-image: url("img/sprites.png");
+	background-repeat: no-repeat;
+	background-position: -4px -2180px;
+}
+
+p.done {
+	border: 1px solid #00c040;
+	
+	border-radius: 0.5pc;
+	-moz-border-radius: 0.5pc;
+	-webkit-border-radius: 0.5pc;
+
+	background: #d0ffc0;
+	
+	font-size: 13px;
+	font-weight: bold;
+	color: #008000;
+	line-height: 24px;
+	padding: 0.5pc 1pc;
+	width: 26pc;
+	margin: 2pc auto 2pc auto;
+}
+
+p.warning {
+	border: 1px solid #c08000;
+	
+	border-radius: 0.5pc;
+	-moz-border-radius: 0.5pc;
+	-webkit-border-radius: 0.5pc;
+
+	background: #fff0a0;
+	
+	font-size: 13px;
+	font-weight: bold;
+	color: #c08000;
+	line-height: 24px;
+	padding: 0.5pc 1pc;
+	width: 26pc;
+	margin: 2pc auto 2pc auto;
+}
+
+p.error {
+	border: 1px solid #c00000;
+	
+	border-radius: 0.5pc;
+	-moz-border-radius: 0.5pc;
+	-webkit-border-radius: 0.5pc;
+
+	background: #ffd0c0;
+	
 	font-size: 13px;
 	font-weight: bold;
 	color: #c00000;
 	line-height: 24px;
-	padding-left: 3pc;
+	padding: 0.5pc 1pc;
 	width: 26pc;
-	margin: 2pc auto 0pc auto;
+	margin: 2pc auto 2pc auto;
 }
 
 /* SHUTDOWN/RESET */
