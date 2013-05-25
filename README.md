@@ -1,3 +1,7 @@
+C.H.A.R.L.I.E.
+==============
+
+
 C.H.A.R.L.I.E. v2 is an embedded solution for automatically watering
 and monitoring a limited number of houseplants. Features include an
 eye-catching web interface and support for logging plant status and
