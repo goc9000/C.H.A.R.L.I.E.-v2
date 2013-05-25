@@ -37,8 +37,8 @@
 							function saveTime()
 							{
 								var now = new Date();
-								
-								setCombo('d0y', now.getFullYear());
+							
+								document.getElementById('d0y').value = '' + now.getFullYear();
 								setCombo('d0M', now.getMonth() + 1);
 								setCombo('d0d', now.getDate());
 							
@@ -115,7 +115,7 @@
 					<xsl:with-param name="select"><xsl:value-of select="$select"/></xsl:with-param>
 				</xsl:call-template>
 			</xsl:when>
-			<xsl:when test="$year &gt;= 2008">
+			<xsl:when test="$year &gt;= 2000">
 				<option xmlns="http://www.w3.org/1999/xhtml">
 					<xsl:attribute name="value"><xsl:value-of select="$year"/></xsl:attribute>
 					<xsl:if test="number($year) = number($select)"><xsl:attribute name="selected"><xsl:value-of select="selected"/></xsl:attribute></xsl:if>
@@ -174,6 +174,7 @@
 	<xsl:template name="dateInput">
 		<xsl:param name="index" />
 		<xsl:param name="select" />
+		<xsl:param name="anyYear"/>
 		<select xmlns="http://www.w3.org/1999/xhtml">
 			<xsl:attribute name="name"><xsl:value-of select="concat('d', string($index), 'd')"/></xsl:attribute>
 			<xsl:attribute name="id"><xsl:value-of select="concat('d', string($index), 'd')"/></xsl:attribute>
@@ -184,11 +185,26 @@
 			<xsl:attribute name="id"><xsl:value-of select="concat('d', string($index), 'M')"/></xsl:attribute>
 			<xsl:call-template name="monthOption"><xsl:with-param name="select" select="substring($select,6,2)"></xsl:with-param></xsl:call-template>
 		</select>
-		<select xmlns="http://www.w3.org/1999/xhtml">
-			<xsl:attribute name="name"><xsl:value-of select="concat('d', string($index), 'y')"/></xsl:attribute>
-			<xsl:attribute name="id"><xsl:value-of select="concat('d', string($index), 'y')"/></xsl:attribute>
-			<xsl:call-template name="yearOption"><xsl:with-param name="select" select="substring($select,1,4)"></xsl:with-param></xsl:call-template>
-		</select>
+		<xsl:choose>
+			<xsl:when test="$anyYear">
+				<input type="text" size="4" maxlength="4" xmlns="http://www.w3.org/1999/xhtml">
+					<xsl:attribute name="name"><xsl:value-of select="concat('d', string($index), 'y')"/></xsl:attribute>
+					<xsl:attribute name="id"><xsl:value-of select="concat('d', string($index), 'y')"/></xsl:attribute>
+					<xsl:attribute name="value">
+						<xsl:if test="substring($select,1,4) != '0000'">
+						<xsl:value-of select="substring($select,1,4)"/>
+						</xsl:if>
+					</xsl:attribute>
+				</input>
+			</xsl:when>
+			<xsl:otherwise>
+				<select xmlns="http://www.w3.org/1999/xhtml">
+					<xsl:attribute name="name"><xsl:value-of select="concat('d', string($index), 'y')"/></xsl:attribute>
+					<xsl:attribute name="id"><xsl:value-of select="concat('d', string($index), 'y')"/></xsl:attribute>
+					<xsl:call-template name="yearOption"><xsl:with-param name="select" select="substring($select,1,4)"></xsl:with-param></xsl:call-template>
+				</select>
+			</xsl:otherwise>
+		</xsl:choose>
 	</xsl:template>
 	<xsl:template name="timeInput">
 		<xsl:param name="index" />
@@ -416,7 +432,7 @@
 					<xsl:when test="@tab=4">
 						<p class="config">
 							<label>Current date</label>
-							<xsl:call-template name="dateInput"><xsl:with-param name="index">0</xsl:with-param><xsl:with-param name="select" select="/page/@datetime"></xsl:with-param></xsl:call-template>
+							<xsl:call-template name="dateInput"><xsl:with-param name="anyYear">1</xsl:with-param><xsl:with-param name="index">0</xsl:with-param><xsl:with-param name="select" select="/page/@datetime"></xsl:with-param></xsl:call-template>
 						</p>
 						<p class="config">
 							<label>Current time</label>
